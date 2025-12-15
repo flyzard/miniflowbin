@@ -1,7 +1,7 @@
 /**
  * Release Service
  *
- * Handles releasing inventory from the warehouse
+ * Handles releasing inventory from the warehouse (full batch release only)
  */
 
 import { transaction } from '../db/database';
@@ -11,7 +11,7 @@ import {
 } from '../repositories/batchRepo';
 import { createTransaction } from '../repositories/transactionRepo';
 import { getPositionById, getPositionByCode, createPosition } from '../repositories/positionRepo';
-import { TransactionType, ReleaseMode } from '../types';
+import { TransactionType } from '../types';
 import type { InventoryBatch, Transaction, Product, StoragePosition } from '../types';
 
 export interface ReleaseInput {
@@ -20,7 +20,6 @@ export interface ReleaseInput {
   destinationPositionId: string;
   userId: string;
   distributionCenterId: string;
-  releaseMode: ReleaseMode;
   notes?: string;
 }
 
@@ -33,7 +32,7 @@ export interface ReleaseResult {
 }
 
 /**
- * Validate release input
+ * Validate release input (full batch release)
  */
 export function validateRelease(input: ReleaseInput): {
   valid: boolean;
@@ -52,19 +51,6 @@ export function validateRelease(input: ReleaseInput): {
   if (batch.quantity <= 0) {
     errors.push('Batch has no available quantity');
     return { valid: false, errors, batch };
-  }
-
-  // Validate quantity
-  const requestedQty = input.releaseMode === ReleaseMode.FULL_BATCH
-    ? batch.quantity
-    : input.quantity;
-
-  if (!Number.isInteger(requestedQty) || requestedQty < 1) {
-    errors.push('Quantity must be a positive integer');
-  }
-
-  if (requestedQty > batch.quantity) {
-    errors.push(`Insufficient quantity. Available: ${batch.quantity}, Requested: ${requestedQty}`);
   }
 
   // Validate destination position
@@ -88,9 +74,9 @@ export function validateRelease(input: ReleaseInput): {
 }
 
 /**
- * Execute release operation
+ * Execute release operation (full batch)
  *
- * Decreases batch quantity and records the release transaction
+ * Releases the entire batch quantity and records the transaction
  */
 export function executeRelease(input: ReleaseInput): ReleaseResult {
   // Validate input
@@ -103,18 +89,13 @@ export function executeRelease(input: ReleaseInput): ReleaseResult {
   }
 
   const batch = validation.batch;
+  const releaseQty = batch.quantity; // Always release full batch
 
   try {
-    // Determine quantity to release
-    const releaseQty = input.releaseMode === ReleaseMode.FULL_BATCH
-      ? batch.quantity
-      : input.quantity;
-
     // Execute in a transaction
     const result = transaction(() => {
-      // Update batch quantity
-      const newQuantity = batch.quantity - releaseQty;
-      updateBatchQuantity(batch.id, newQuantity);
+      // Update batch quantity to 0
+      updateBatchQuantity(batch.id, 0);
 
       // Create the release transaction
       const txn = createTransaction({
@@ -132,7 +113,7 @@ export function executeRelease(input: ReleaseInput): ReleaseResult {
       return {
         txn,
         releasedQuantity: releaseQty,
-        remainingQuantity: newQuantity
+        remainingQuantity: 0
       };
     });
 
@@ -149,35 +130,6 @@ export function executeRelease(input: ReleaseInput): ReleaseResult {
       error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
-}
-
-/**
- * Quick release of full batch
- */
-export function executeFullBatchRelease(
-  batchId: string,
-  destinationPositionId: string,
-  userId: string,
-  distributionCenterId: string,
-  notes?: string
-): ReleaseResult {
-  const batch = getBatchById(batchId);
-  if (!batch) {
-    return {
-      success: false,
-      error: 'Batch not found'
-    };
-  }
-
-  return executeRelease({
-    batchId,
-    quantity: batch.quantity,
-    destinationPositionId,
-    userId,
-    distributionCenterId,
-    releaseMode: ReleaseMode.FULL_BATCH,
-    notes
-  });
 }
 
 /**

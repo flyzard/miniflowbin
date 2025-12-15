@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { validateCsv, generatePreview, executeImport } from '../layoutImportService';
-import type { ImportPosition, ImportPreviewSummary, OrphanStrategy } from '../../types/layoutImport';
+import type { ImportPosition, ImportPreviewSummary, OrphanStrategy } from '../../types';
 
 // Mock database module
 vi.mock('../../db/database', () => ({

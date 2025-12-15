@@ -30,9 +30,10 @@ vi.mock('../../repositories/transactionRepo', () => ({
 }));
 
 // Import after mocking
-import { validateReceive } from '../receiveService';
+import { validateReceive, generateBatchNumber } from '../receiveService';
 import { getProductById } from '../../repositories/productRepo';
 import { getPositionById } from '../../repositories/positionRepo';
+import { getTodayBatchCount } from '../../repositories/batchRepo';
 
 describe('receiveService', () => {
   beforeEach(() => {
@@ -166,6 +167,47 @@ describe('receiveService', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Distribution center ID is required');
+    });
+  });
+
+  describe('generateBatchNumber', () => {
+    it('should generate batch number with correct format', () => {
+      vi.mocked(getTodayBatchCount).mockReturnValue(0);
+
+      const batchNumber = generateBatchNumber('dc-1');
+
+      expect(batchNumber).toMatch(/^BATCH-\d{8}-001$/);
+    });
+
+    it('should increment sequence based on today count', () => {
+      vi.mocked(getTodayBatchCount).mockReturnValue(5);
+
+      const batchNumber = generateBatchNumber('dc-1');
+
+      expect(batchNumber).toMatch(/^BATCH-\d{8}-006$/);
+    });
+
+    it('should pad sequence with zeros', () => {
+      vi.mocked(getTodayBatchCount).mockReturnValue(99);
+
+      const batchNumber = generateBatchNumber('dc-1');
+
+      expect(batchNumber).toMatch(/^BATCH-\d{8}-100$/);
+    });
+
+    it('should include current date', () => {
+      vi.mocked(getTodayBatchCount).mockReturnValue(0);
+
+      const now = new Date();
+      const expectedDate = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0')
+      ].join('');
+
+      const batchNumber = generateBatchNumber('dc-1');
+
+      expect(batchNumber).toBe(`BATCH-${expectedDate}-001`);
     });
   });
 });

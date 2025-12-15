@@ -4,7 +4,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { validateProductCsv, executeProductImport } from '../productImportService';
-import type { ImportProduct } from '../../types/productImport';
+import type { ImportProduct } from '../../types';
 
 // Mock the database module
 vi.mock('../../db/database', () => ({

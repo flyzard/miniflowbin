@@ -18,7 +18,7 @@
   } from '../../lib/stores/layoutImportFlow';
   import { validateCsv, generatePreview, executeImport } from '../../lib/services/layoutImportService';
   import { generateTemplateCsv, downloadCsv } from '../../lib/services/csvParserService';
-  import type { OrphanStrategy } from '../../lib/types/layoutImport';
+  import type { OrphanStrategy } from '../../lib/types';
 
   // Local state
   let fileInput: HTMLInputElement;

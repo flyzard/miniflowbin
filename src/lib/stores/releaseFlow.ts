@@ -1,17 +1,14 @@
 /**
  * Release Flow Store
  *
- * Manages state for the release inventory wizard
+ * Manages state for the release inventory wizard (full batch release only)
  */
 
 import { writable } from 'svelte/store';
 import type { ReleaseFlowState } from '../types';
-import { ReleaseMode } from '../types';
 
 const initial: ReleaseFlowState = {
   product: null,
-  mode: ReleaseMode.FULL_BATCH,
-  quantity: null,
   sourceBatch: null,
   sourcePosition: null,
   destinationPosition: null
@@ -24,7 +21,7 @@ export function resetReleaseFlow(): void {
 }
 
 export function canSelectSource(s: ReleaseFlowState): boolean {
-  return s.product !== null && (s.mode === ReleaseMode.FULL_BATCH || (s.quantity !== null && s.quantity > 0));
+  return s.product !== null;
 }
 
 export function canSelectDestination(s: ReleaseFlowState): boolean {
@@ -36,5 +33,5 @@ export function canConfirmRelease(s: ReleaseFlowState): boolean {
 }
 
 export function effectiveQuantity(s: ReleaseFlowState): number {
-  return s.mode === ReleaseMode.FULL_BATCH && s.sourceBatch ? s.sourceBatch.quantity : (s.quantity ?? 0);
+  return s.sourceBatch?.quantity ?? 0;
 }

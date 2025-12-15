@@ -1,11 +1,11 @@
 /**
  * Settings Repository
  *
- * Handles app settings (key-value store)
+ * Handles app settings (key-value store), users, and distribution centers
  */
 
-import { exec, queryOne } from '../db/database';
-import type { AppSettings } from '../types';
+import { exec, query, queryOne } from '../db/database';
+import type { AppSettings, User, DistributionCenter } from '../types';
 
 /**
  * Get a setting value by key
@@ -61,4 +61,41 @@ export function getCurrentUserId(): string | null {
  */
 export function setCurrentUserId(userId: string): void {
   setSetting('current_user_id', userId);
+}
+
+// ============================================================================
+// Users
+// ============================================================================
+
+/**
+ * Get a user by ID
+ */
+export function getUserById(id: string): User | null {
+  return queryOne<User>(
+    'SELECT * FROM users WHERE id = ?',
+    [id]
+  );
+}
+
+// ============================================================================
+// Distribution Centers
+// ============================================================================
+
+/**
+ * Get all active distribution centers
+ */
+export function listActiveDistributionCenters(): DistributionCenter[] {
+  return query<DistributionCenter>(
+    'SELECT * FROM distribution_centers WHERE is_active = 1 ORDER BY name'
+  );
+}
+
+/**
+ * Get a distribution center by ID
+ */
+export function getDistributionCenterById(id: string): DistributionCenter | null {
+  return queryOne<DistributionCenter>(
+    'SELECT * FROM distribution_centers WHERE id = ?',
+    [id]
+  );
 }

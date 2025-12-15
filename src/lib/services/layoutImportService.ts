@@ -23,8 +23,8 @@ import type {
   OrphanStrategy,
   ImportResult,
   ImportAction
-} from '../types/layoutImport';
-import { STATUS_MAP, KNOWN_HEADERS, REQUIRED_HEADERS } from '../types/layoutImport';
+} from '../types';
+import { STATUS_MAP, KNOWN_HEADERS, REQUIRED_HEADERS } from '../types';
 
 /**
  * Transform CSV row to ImportPosition

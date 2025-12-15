@@ -12,8 +12,8 @@ import type {
   ProductValidationError,
   ProductValidationResult,
   ProductImportResult
-} from '../types/productImport';
-import { PRODUCT_KNOWN_HEADERS } from '../types/productImport';
+} from '../types';
+import { PRODUCT_KNOWN_HEADERS } from '../types';
 
 /**
  * Transform CSV row to ImportProduct

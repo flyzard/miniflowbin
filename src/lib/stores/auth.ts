@@ -6,8 +6,7 @@
 
 import { writable } from 'svelte/store';
 import type { User } from '../types';
-import { getUserById } from '../repositories/userRepo';
-import { getCurrentUserId, setCurrentUserId } from '../repositories/settingsRepo';
+import { getUserById, getCurrentUserId, setCurrentUserId } from '../repositories/settingsRepo';
 
 // Current user store
 const currentUserStore = writable<User | null>(null);

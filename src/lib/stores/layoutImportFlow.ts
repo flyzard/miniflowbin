@@ -11,7 +11,7 @@ import type {
   ImportValidationResult,
   ImportPreviewSummary,
   ImportResult
-} from '../types/layoutImport';
+} from '../types';
 
 /**
  * Initial state

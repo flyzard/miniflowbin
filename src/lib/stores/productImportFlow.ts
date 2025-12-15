@@ -9,7 +9,7 @@ import type {
   ProductImportStep,
   ProductValidationResult,
   ProductImportResult
-} from '../types/productImport';
+} from '../types';
 
 /**
  * Initial state

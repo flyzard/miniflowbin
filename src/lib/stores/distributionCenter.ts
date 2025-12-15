@@ -8,9 +8,10 @@ import { writable } from 'svelte/store';
 import type { DistributionCenter } from '../types';
 import {
   listActiveDistributionCenters,
-  getDistributionCenterById
-} from '../repositories/distributionCenterRepo';
-import { getSelectedDcId, setSelectedDcId } from '../repositories/settingsRepo';
+  getDistributionCenterById,
+  getSelectedDcId,
+  setSelectedDcId
+} from '../repositories/settingsRepo';
 
 // Selected distribution center
 const selectedDcStore = writable<DistributionCenter | null>(null);

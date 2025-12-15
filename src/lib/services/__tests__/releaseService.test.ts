@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { ReleaseMode } from '../../types';
 
 // Mock the database module first (must be before importing anything that uses it)
 vi.mock('../../db/database', () => ({
@@ -71,11 +70,10 @@ describe('releaseService', () => {
 
     const validInput = {
       batchId: 'batch-1',
-      quantity: 50,
+      quantity: 100, // Full batch quantity
       destinationPositionId: 'position-2',
       userId: 'user-1',
-      distributionCenterId: 'dc-1',
-      releaseMode: ReleaseMode.SPECIFIC_QUANTITY
+      distributionCenterId: 'dc-1'
     };
 
     it('should validate a valid release request', () => {
@@ -109,16 +107,6 @@ describe('releaseService', () => {
       expect(result.errors).toContain('Batch has no available quantity');
     });
 
-    it('should fail when requested quantity exceeds available', () => {
-      vi.mocked(getBatchById).mockReturnValue({ ...mockBatch, quantity: 20 });
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
-
-      const result = validateRelease({ ...validInput, quantity: 50 });
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('Insufficient quantity'))).toBe(true);
-    });
-
     it('should fail when destination position is not found', () => {
       vi.mocked(getBatchById).mockReturnValue(mockBatch);
       vi.mocked(getPositionById).mockReturnValue(null);
@@ -147,33 +135,6 @@ describe('releaseService', () => {
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('User ID is required');
-    });
-
-    it('should use full batch quantity when mode is FULL_BATCH', () => {
-      vi.mocked(getBatchById).mockReturnValue(mockBatch);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
-
-      const result = validateRelease({
-        ...validInput,
-        releaseMode: ReleaseMode.FULL_BATCH,
-        quantity: 0 // This should be ignored
-      });
-
-      expect(result.valid).toBe(true);
-    });
-
-    it('should fail for non-positive quantity in specific mode', () => {
-      vi.mocked(getBatchById).mockReturnValue(mockBatch);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
-
-      const result = validateRelease({
-        ...validInput,
-        releaseMode: ReleaseMode.SPECIFIC_QUANTITY,
-        quantity: 0
-      });
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('positive integer'))).toBe(true);
     });
   });
 });

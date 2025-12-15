@@ -5,8 +5,7 @@
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { currentUser } from '../../lib/stores/auth';
   import { receiveFlow, resetReceiveFlow } from '../../lib/stores/receiveFlow';
-  import { executeReceive } from '../../lib/services/receiveService';
-  import { generateBatchNumber } from '../../lib/services/batchNumberService';
+  import { executeReceive, generateBatchNumber } from '../../lib/services/receiveService';
   import { onMount } from 'svelte';
 
   let isSubmitting = false;

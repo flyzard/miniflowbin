@@ -5,13 +5,33 @@
  */
 
 import { transaction } from '../db/database';
-import { createBatch } from '../repositories/batchRepo';
+import { createBatch, getTodayBatchCount } from '../repositories/batchRepo';
 import { createTransaction } from '../repositories/transactionRepo';
 import { getProductById } from '../repositories/productRepo';
 import { getPositionById } from '../repositories/positionRepo';
-import { generateBatchNumber } from './batchNumberService';
 import { TransactionType } from '../types';
 import type { InventoryBatch, Transaction } from '../types';
+
+/**
+ * Generate a new unique batch number
+ *
+ * Format: BATCH-YYYYMMDD-NNN
+ * Example: BATCH-20251215-001
+ */
+export function generateBatchNumber(distributionCenterId: string): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const dateStr = `${year}${month}${day}`;
+
+  // Get count of batches already created today
+  const todayCount = getTodayBatchCount(distributionCenterId);
+  const nextNumber = todayCount + 1;
+  const sequence = String(nextNumber).padStart(3, '0');
+
+  return `BATCH-${dateStr}-${sequence}`;
+}
 
 export interface ReceiveInput {
   productId: string;

@@ -6,7 +6,6 @@
   import { currentUser } from '../../lib/stores/auth';
   import { releaseFlow, resetReleaseFlow, effectiveQuantity } from '../../lib/stores/releaseFlow';
   import { executeRelease, resolveDestinationPosition } from '../../lib/services/releaseService';
-  import { ReleaseMode } from '../../lib/types';
 
   let isSubmitting = false;
 
@@ -29,9 +28,7 @@
     },
     {
       label: 'Quantity',
-      value: $releaseFlow.mode === ReleaseMode.FULL_BATCH
-        ? `${qty} (full batch)`
-        : String(qty),
+      value: `${qty} (full batch)`,
       icon: 'quantity' as const
     },
     {
@@ -42,7 +39,7 @@
   ];
 
   async function handleConfirm() {
-    const { sourceBatch, destinationPosition, mode } = $releaseFlow;
+    const { sourceBatch, destinationPosition } = $releaseFlow;
     if (!sourceBatch || !destinationPosition || !$selectedDc || !$currentUser) {
       showError('Missing required data');
       return;
@@ -56,8 +53,7 @@
         quantity: qty,
         destinationPositionId: destinationPosition.id,
         userId: $currentUser.id,
-        distributionCenterId: $selectedDc.id,
-        releaseMode: mode
+        distributionCenterId: $selectedDc.id
       });
 
       if (result.success) {

@@ -4,10 +4,8 @@
  */
 
 import Papa from 'papaparse';
-import type { CsvPositionRow } from '../types/layoutImport';
-import { REQUIRED_HEADERS } from '../types/layoutImport';
-import type { CsvProductRow } from '../types/productImport';
-import { PRODUCT_REQUIRED_HEADERS } from '../types/productImport';
+import type { CsvPositionRow, CsvProductRow } from '../types';
+import { REQUIRED_HEADERS, PRODUCT_REQUIRED_HEADERS } from '../types';
 
 /**
  * Result of parsing a CSV file
