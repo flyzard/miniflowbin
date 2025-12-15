@@ -108,6 +108,7 @@
   }
 
   .position-code {
+    color: var(--color-text-primary);
     display: flex;
     align-items: center;
     gap: var(--space-xs);

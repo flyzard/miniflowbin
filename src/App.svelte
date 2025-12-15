@@ -11,7 +11,6 @@
   import ReleaseStep1 from './routes/release/Step1.svelte';
   import ReleaseStep2 from './routes/release/Step2.svelte';
   import ReleaseStep3 from './routes/release/Step3.svelte';
-  import ReleaseStep4 from './routes/release/Step4.svelte';
 
   // Route definitions
   const routes = {
@@ -20,8 +19,7 @@
     '/receive/confirm': ReceiveStep2,
     '/release': ReleaseStep1,
     '/release/source': ReleaseStep2,
-    '/release/destination': ReleaseStep3,
-    '/release/confirm': ReleaseStep4,
+    '/release/confirm': ReleaseStep3,
     '*': Home
   };
 

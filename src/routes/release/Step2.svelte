@@ -32,14 +32,14 @@
 
   function handleContinue() {
     if (canProceed) {
-      push('/release/destination');
+      push('/release/confirm');
     }
   }
 </script>
 
 <PageLayout title="Select Source Position">
   <BackNav slot="nav" href="/release" />
-  <StepIndicator currentStep={2} totalSteps={4} stepName="Choose where to pick from" />
+  <StepIndicator currentStep={2} totalSteps={3} stepName="Choose where to pick from" />
 
   {#if $releaseFlow.product}
     <p class="product-info">

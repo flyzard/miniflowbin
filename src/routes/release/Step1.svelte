@@ -32,7 +32,7 @@
 
 <PageLayout title="Release Inventory">
   <BackNav slot="nav" href="/" />
-  <StepIndicator currentStep={1} totalSteps={4} stepName="Select product" />
+  <StepIndicator currentStep={1} totalSteps={3} stepName="Select product" />
 
   <div class="form">
     <SearchDropdown

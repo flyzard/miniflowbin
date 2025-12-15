@@ -2,8 +2,9 @@
  * Storage Position Repository
  */
 
-import { query, queryOne } from '../db/database';
+import { query, queryOne, exec } from '../db/database';
 import type { StoragePosition } from '../types';
+import { generateId, now } from '../types';
 
 /**
  * Get all positions for a distribution center
@@ -41,4 +42,49 @@ export function searchPositions(searchTerm: string, distributionCenterId: string
      LIMIT ?`,
     [distributionCenterId, term, term, term, limit]
   );
+}
+
+/**
+ * Get a position by its code within a distribution center
+ */
+export function getPositionByCode(code: string, distributionCenterId: string): StoragePosition | null {
+  return queryOne<StoragePosition>(
+    'SELECT * FROM storage_positions WHERE code = ? AND distribution_center_id = ? AND is_active = 1',
+    [code, distributionCenterId]
+  );
+}
+
+/**
+ * Create a new storage position
+ */
+export function createPosition(data: {
+  code: string;
+  zone: string;
+  zoneType?: string;
+  description?: string;
+  distributionCenterId: string;
+}): StoragePosition {
+  const id = generateId();
+  const timestamp = now();
+
+  exec(
+    `INSERT INTO storage_positions
+     (id, code, zone, zone_type, description, aisle, rack, level, distribution_center_id, is_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+    [
+      id,
+      data.code,
+      data.zone,
+      data.zoneType ?? 'Shipping',
+      data.description ?? `Release destination for ${data.code}`,
+      null,
+      null,
+      null,
+      data.distributionCenterId,
+      timestamp,
+      timestamp
+    ]
+  );
+
+  return getPositionById(id)!;
 }

@@ -10,9 +10,9 @@ import {
   updateBatchQuantity
 } from '../repositories/batchRepo';
 import { createTransaction } from '../repositories/transactionRepo';
-import { getPositionById } from '../repositories/positionRepo';
+import { getPositionById, getPositionByCode, createPosition } from '../repositories/positionRepo';
 import { TransactionType, ReleaseMode } from '../types';
-import type { InventoryBatch, Transaction } from '../types';
+import type { InventoryBatch, Transaction, Product, StoragePosition } from '../types';
 
 export interface ReleaseInput {
   batchId: string;
@@ -178,4 +178,31 @@ export function executeFullBatchRelease(
     releaseMode: ReleaseMode.FULL_BATCH,
     notes
   });
+}
+
+/**
+ * Resolve or create destination position based on product SKU
+ * The destination position code matches the product SKU
+ */
+export function resolveDestinationPosition(
+  product: Product,
+  distributionCenterId: string
+): { position: StoragePosition; wasCreated: boolean } {
+  // Try to find existing position with code = product SKU
+  const existing = getPositionByCode(product.sku, distributionCenterId);
+
+  if (existing) {
+    return { position: existing, wasCreated: false };
+  }
+
+  // Auto-create position with SKU as code
+  const newPosition = createPosition({
+    code: product.sku,
+    zone: 'Shipping',
+    zoneType: 'Shipping',
+    description: `Release destination for ${product.name}`,
+    distributionCenterId
+  });
+
+  return { position: newPosition, wasCreated: true };
 }

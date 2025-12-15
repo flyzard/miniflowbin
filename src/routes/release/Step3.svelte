@@ -1,100 +1,193 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, SearchDropdown, Button, PageLayout } from '../../lib/components';
+  import { BackNav, StepIndicator, InfoCard, Button, PageLayout } from '../../lib/components';
+  import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
-  import { releaseFlow, canConfirmRelease, effectiveQuantity } from '../../lib/stores/releaseFlow';
-  import { searchPositions } from '../../lib/repositories/positionRepo';
-  import type { StoragePosition } from '../../lib/types';
+  import { currentUser } from '../../lib/stores/auth';
+  import { releaseFlow, resetReleaseFlow, effectiveQuantity } from '../../lib/stores/releaseFlow';
+  import { executeRelease, resolveDestinationPosition } from '../../lib/services/releaseService';
+  import { ReleaseMode } from '../../lib/types';
 
-  $: canProceed = canConfirmRelease($releaseFlow);
+  let isSubmitting = false;
+
   $: qty = effectiveQuantity($releaseFlow);
 
-  // Get positions for the selected DC (excluding source position)
-  $: dcId = $selectedDc?.id ?? '';
-  $: allPositions = dcId ? searchPositions('', dcId, 100) : [];
-  $: availablePositions = allPositions.filter(p => p.id !== $releaseFlow.sourcePosition?.id);
-
-  function handlePositionSelect(event: CustomEvent<StoragePosition | null>) {
-    releaseFlow.update(s => ({ ...s, destinationPosition: event.detail }));
+  // Auto-resolve destination position based on product SKU
+  $: {
+    if ($releaseFlow.product && $selectedDc && !$releaseFlow.destinationPosition) {
+      const { position } = resolveDestinationPosition($releaseFlow.product, $selectedDc.id);
+      releaseFlow.update(s => ({ ...s, destinationPosition: position }));
+    }
   }
 
-  function handleContinue() {
-    if (canProceed) {
-      push('/release/confirm');
+  // Build info rows for display
+  $: infoRows = [
+    {
+      label: 'Product',
+      value: $releaseFlow.product ? `${$releaseFlow.product.name} (${$releaseFlow.product.sku})` : '-',
+      icon: 'product' as const
+    },
+    {
+      label: 'Quantity',
+      value: $releaseFlow.mode === ReleaseMode.FULL_BATCH
+        ? `${qty} (full batch)`
+        : String(qty),
+      icon: 'quantity' as const
+    },
+    {
+      label: 'Batch #',
+      value: $releaseFlow.sourceBatch?.batch_number ?? '-',
+      icon: 'batch' as const
+    }
+  ];
+
+  async function handleConfirm() {
+    const { sourceBatch, destinationPosition, mode } = $releaseFlow;
+    if (!sourceBatch || !destinationPosition || !$selectedDc || !$currentUser) {
+      showError('Missing required data');
+      return;
+    }
+
+    isSubmitting = true;
+
+    try {
+      const result = executeRelease({
+        batchId: sourceBatch.id,
+        quantity: qty,
+        destinationPositionId: destinationPosition.id,
+        userId: $currentUser.id,
+        distributionCenterId: $selectedDc.id,
+        releaseMode: mode
+      });
+
+      if (result.success) {
+        showSuccess(`Released ${result.releasedQuantity} units of ${$releaseFlow.product?.name}`);
+        resetReleaseFlow();
+        push('/');
+      } else {
+        showError(result.error ?? 'Failed to release inventory');
+      }
+    } catch (error) {
+      console.error('Release error:', error);
+      showError('An unexpected error occurred');
+    } finally {
+      isSubmitting = false;
     }
   }
 </script>
 
-<PageLayout title="Select Destination">
+<PageLayout title="Confirm Release">
   <BackNav slot="nav" href="/release/source" />
-  <StepIndicator currentStep={3} totalSteps={4} stepName="Where to release" />
+  <StepIndicator currentStep={3} totalSteps={3} stepName="Review and confirm" />
 
-  <div class="summary">
-    <div class="summary-row">
-      <span class="label">Product</span>
-      <span class="value">{$releaseFlow.product?.name ?? '-'}</span>
+  <div class="info-section">
+    <InfoCard rows={infoRows} />
+  </div>
+
+  <div class="movement">
+    <div class="location from">
+      <span class="location-label">From</span>
+      <span class="location-value">{$releaseFlow.sourcePosition?.code ?? '-'}</span>
+      <span class="location-zone">{$releaseFlow.sourcePosition?.zone ?? ''}</span>
     </div>
-    <div class="summary-row">
-      <span class="label">Quantity</span>
-      <span class="value">{qty} units</span>
+    <div class="arrow">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/>
+        <path d="m12 5 7 7-7 7"/>
+      </svg>
     </div>
-    <div class="summary-row">
-      <span class="label">From</span>
-      <span class="value from">{$releaseFlow.sourcePosition?.code ?? '-'}</span>
+    <div class="location to">
+      <span class="location-label">To</span>
+      <span class="location-value">{$releaseFlow.destinationPosition?.code ?? '-'}</span>
+      <span class="location-zone">{$releaseFlow.destinationPosition?.zone ?? ''}</span>
     </div>
   </div>
 
-  <div class="form">
-    <SearchDropdown
-      label="Destination Position"
-      placeholder="Select destination..."
-      searchPlaceholder="Search by code or zone..."
-      items={availablePositions}
-      value={$releaseFlow.destinationPosition}
-      displayFn={(p) => p.code}
-      secondaryFn={(p) => p.zone}
-      required={true}
-      on:select={handlePositionSelect}
-    />
+  <div class="actions">
+    <Button variant="secondary" on:click={() => push('/release/source')}>
+      Back
+    </Button>
+    <Button
+      loading={isSubmitting}
+      disabled={!$releaseFlow.sourceBatch || !$releaseFlow.destinationPosition}
+      on:click={handleConfirm}
+    >
+      Confirm
+    </Button>
   </div>
-
-  <Button disabled={!canProceed} on:click={handleContinue}>
-    Continue
-  </Button>
 </PageLayout>
 
 <style>
-  .summary {
+  .info-section {
+    margin-bottom: var(--space-md);
+  }
+
+  .movement {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
     background: var(--color-bg-input);
     border-radius: var(--radius-input);
     padding: var(--space-md);
     margin-bottom: var(--space-lg);
   }
 
-  .summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: var(--space-xs) 0;
+  .location {
+    flex: 1;
+    text-align: center;
+    padding: var(--space-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-input);
+    border: 1px solid transparent;
   }
 
-  .summary-row:not(:last-child) {
-    border-bottom: 1px solid var(--color-border-subtle);
+  .location.from {
+    border-color: var(--color-accent-warning);
   }
 
-  .label {
+  .location.to {
+    border-color: var(--color-accent-success);
+  }
+
+  .location-label {
+    display: block;
+    font-size: var(--font-size-caption);
     color: var(--color-text-secondary);
-    font-size: var(--font-size-secondary);
+    margin-bottom: var(--space-xs);
   }
 
-  .value {
+  .location-value {
+    display: block;
     font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-xs);
   }
 
-  .value.from {
+  .location.from .location-value {
     color: var(--color-accent-warning);
   }
 
-  .form {
-    margin-bottom: var(--space-lg);
+  .location.to .location-value {
+    color: var(--color-accent-success);
+  }
+
+  .location-zone {
+    display: block;
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+  }
+
+  .arrow {
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .actions :global(button) {
+    flex: 1;
   }
 </style>
