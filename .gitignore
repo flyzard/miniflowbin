@@ -32,3 +32,18 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Vite
+*.local
+.vite
+
+# PWA
+dev-dist
+sw.js
+workbox-*.js
+
+# Lock files (using bun)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.vercel
