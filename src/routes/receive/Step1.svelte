@@ -1,16 +1,16 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, SearchDropdown, QuantityInput, Button, PageLayout } from '../../lib/components';
+  import { BackNav, StepIndicator, SearchDropdown, QuantityInput, Button, PageLayout, PositionSelector } from '../../lib/components';
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { receiveFlow, canConfirmReceive } from '../../lib/stores/receiveFlow';
   import { searchProducts } from '../../lib/repositories/productRepo';
-  import { searchPositions } from '../../lib/repositories/positionRepo';
+  import { listPositions } from '../../lib/repositories/positionRepo';
   import type { Product, StoragePosition } from '../../lib/types';
 
   // Get products and positions based on selected DC
   $: dcId = $selectedDc?.id ?? '';
   $: products = dcId ? searchProducts('', dcId, 100) : [];
-  $: positions = dcId ? searchPositions('', dcId, 100) : [];
+  $: positions = dcId ? listPositions(dcId) : [];
   $: canProceed = canConfirmReceive($receiveFlow);
 
   function handleProductSelect(event: CustomEvent<Product | null>) {
@@ -43,8 +43,8 @@
       searchPlaceholder="Search by name or SKU..."
       items={products}
       value={$receiveFlow.product}
-      displayFn={(p) => p.name}
-      secondaryFn={(p) => p.sku}
+      displayFn={(p) => p.name || p.sku}
+      secondaryFn={(p) => [p.name ? p.sku : null, p.color, p.size].filter(Boolean).join(' • ')}
       required={true}
       on:select={handleProductSelect}
     />
@@ -58,14 +58,10 @@
       on:change={handleQuantityChange}
     />
 
-    <SearchDropdown
+    <PositionSelector
       label="Storage Position"
-      placeholder="Select a position..."
-      searchPlaceholder="Search by code or zone..."
-      items={positions}
+      positions={positions}
       value={$receiveFlow.position}
-      displayFn={(p) => p.code}
-      secondaryFn={(p) => p.zone}
       required={true}
       on:select={handlePositionSelect}
     />

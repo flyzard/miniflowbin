@@ -41,8 +41,8 @@
       searchPlaceholder="Search by name or SKU..."
       items={productsWithInventory}
       value={selectedProductInventory}
-      displayFn={(p) => p.name}
-      secondaryFn={(p) => `${p.sku} • ${p.total_quantity} available`}
+      displayFn={(p) => p.name || p.sku}
+      secondaryFn={(p) => [p.name ? p.sku : null, p.color, p.size, `${p.total_quantity} available`].filter(Boolean).join(' • ')}
       required={true}
       on:select={handleProductSelect}
     />
