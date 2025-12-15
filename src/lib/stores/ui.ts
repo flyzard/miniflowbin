@@ -1,19 +1,15 @@
 /**
  * UI Store
  *
- * Manages UI state like loading, toasts, etc.
+ * Manages UI state like toasts
  */
 
-import { writable, derived } from 'svelte/store';
-
-// Loading state
-const loadingStore = writable<boolean>(false);
-const loadingMessageStore = writable<string>('');
+import { writable } from 'svelte/store';
 
 // Toast notifications
 export interface Toast {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: 'success' | 'error';
   message: string;
   duration: number;
 }
@@ -23,25 +19,9 @@ const toastsStore = writable<Toast[]>([]);
 let toastIdCounter = 0;
 
 /**
- * Show loading indicator
- */
-export function showLoading(message: string = 'Loading...'): void {
-  loadingStore.set(true);
-  loadingMessageStore.set(message);
-}
-
-/**
- * Hide loading indicator
- */
-export function hideLoading(): void {
-  loadingStore.set(false);
-  loadingMessageStore.set('');
-}
-
-/**
  * Show a toast notification
  */
-export function showToast(
+function showToast(
   type: Toast['type'],
   message: string,
   duration: number = 3000
@@ -76,46 +56,11 @@ export function showError(message: string, duration?: number): string {
 }
 
 /**
- * Show warning toast
- */
-export function showWarning(message: string, duration?: number): string {
-  return showToast('warning', message, duration ?? 4000);
-}
-
-/**
- * Show info toast
- */
-export function showInfo(message: string, duration?: number): string {
-  return showToast('info', message, duration);
-}
-
-/**
  * Remove a toast by ID
  */
 export function removeToast(id: string): void {
   toastsStore.update(toasts => toasts.filter(t => t.id !== id));
 }
-
-/**
- * Clear all toasts
- */
-export function clearToasts(): void {
-  toastsStore.set([]);
-}
-
-/**
- * Subscribe to loading state
- */
-export const isLoading = {
-  subscribe: loadingStore.subscribe
-};
-
-/**
- * Subscribe to loading message
- */
-export const loadingMessage = {
-  subscribe: loadingMessageStore.subscribe
-};
 
 /**
  * Subscribe to toasts

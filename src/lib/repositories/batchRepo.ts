@@ -3,7 +3,7 @@
  */
 
 import { exec, query, queryOne } from '../db/database';
-import type { InventoryBatch, BatchWithDetails } from '../types';
+import type { InventoryBatch } from '../types';
 import { generateId, now } from '../types';
 
 /**
@@ -49,8 +49,8 @@ export function listBatchesAtPosition(positionId: string): InventoryBatch[] {
 /**
  * Get batches for a product with full details (product name, position code)
  */
-export function listBatchesWithDetails(productId: string): BatchWithDetails[] {
-  return query<BatchWithDetails>(
+export function listBatchesWithDetails(productId: string): InventoryBatch[] {
+  return query<InventoryBatch>(
     `SELECT
        b.*,
        p.name as product_name,
@@ -113,16 +113,6 @@ export function updateBatchQuantity(id: string, newQuantity: number): void {
   exec(
     'UPDATE inventory_batches SET quantity = ?, updated_at = ? WHERE id = ?',
     [newQuantity, now(), id]
-  );
-}
-
-/**
- * Decrease batch quantity by a given amount
- */
-export function decreaseBatchQuantity(id: string, amount: number): void {
-  exec(
-    'UPDATE inventory_batches SET quantity = quantity - ?, updated_at = ? WHERE id = ? AND quantity >= ?',
-    [amount, now(), id, amount]
   );
 }
 

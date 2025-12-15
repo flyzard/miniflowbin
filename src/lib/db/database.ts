@@ -138,22 +138,6 @@ export function queryOne<T = Record<string, SqlValue>>(sql: string, params?: Sql
 }
 
 /**
- * Insert a row and return the last inserted row ID
- */
-export function insert(sql: string, params?: SqlValue[]): number {
-  const database = getDatabase();
-  if (params && params.length > 0) {
-    database.exec({ sql, bind: params });
-  } else {
-    database.exec(sql);
-  }
-
-  // Get the last inserted row ID
-  const result = queryOne<{ id: number }>('SELECT last_insert_rowid() as id');
-  return result?.id ?? 0;
-}
-
-/**
  * Execute multiple statements in a transaction
  */
 export function transaction<T>(fn: () => T): T {
@@ -167,23 +151,4 @@ export function transaction<T>(fn: () => T): T {
     database.exec('ROLLBACK');
     throw error;
   }
-}
-
-/**
- * Close the database connection
- */
-export function closeDatabase(): void {
-  if (db) {
-    db.close();
-    db = null;
-    initPromise = null;
-    console.log('[DB] Database closed');
-  }
-}
-
-/**
- * Check if database is initialized
- */
-export function isDatabaseInitialized(): boolean {
-  return db !== null;
 }

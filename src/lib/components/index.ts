@@ -14,4 +14,4 @@ export { default as InfoCard } from './InfoCard.svelte';
 export { default as PositionCard } from './PositionCard.svelte';
 export { default as RadioGroup } from './RadioGroup.svelte';
 export { default as Header } from './Header.svelte';
-export { default as PageContainer } from './PageContainer.svelte';
+export { default as PageLayout } from './PageLayout.svelte';

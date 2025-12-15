@@ -26,29 +26,3 @@ export function generateBatchNumber(distributionCenterId: string): string {
 
   return `BATCH-${dateStr}-${sequence}`;
 }
-
-/**
- * Parse a batch number to extract its components
- */
-export function parseBatchNumber(batchNumber: string): {
-  date: Date;
-  sequence: number;
-} | null {
-  const match = batchNumber.match(/^BATCH-(\d{4})(\d{2})(\d{2})-(\d{3})$/);
-  if (!match) return null;
-
-  const [, year, month, day, seq] = match;
-  if (!year || !month || !day || !seq) return null;
-
-  return {
-    date: new Date(parseInt(year), parseInt(month) - 1, parseInt(day)),
-    sequence: parseInt(seq)
-  };
-}
-
-/**
- * Validate a batch number format
- */
-export function isValidBatchNumber(batchNumber: string): boolean {
-  return /^BATCH-\d{8}-\d{3}$/.test(batchNumber);
-}

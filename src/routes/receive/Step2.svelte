@@ -1,31 +1,21 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, InfoCard, Button } from '../../lib/components';
+  import { BackNav, StepIndicator, InfoCard, Button, PageLayout } from '../../lib/components';
   import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { currentUser } from '../../lib/stores/auth';
-  import {
-    receiveFlowState,
-    setReceiveBatchNumber,
-    resetReceiveFlow
-  } from '../../lib/stores/receiveFlow';
+  import { receiveFlow, resetReceiveFlow } from '../../lib/stores/receiveFlow';
   import { executeReceive } from '../../lib/services/receiveService';
   import { generateBatchNumber } from '../../lib/services/batchNumberService';
   import { onMount } from 'svelte';
 
   let isSubmitting = false;
 
-  // Get flow state
-  $: product = $receiveFlowState.product;
-  $: quantity = $receiveFlowState.quantity;
-  $: position = $receiveFlowState.position;
-  $: batchNumber = $receiveFlowState.batchNumber;
-
   // Generate batch number on mount
   onMount(() => {
-    if ($selectedDc && !batchNumber) {
+    if ($selectedDc && !$receiveFlow.batchNumber) {
       const newBatchNumber = generateBatchNumber($selectedDc.id);
-      setReceiveBatchNumber(newBatchNumber);
+      receiveFlow.update(s => ({ ...s, batchNumber: newBatchNumber }));
     }
   });
 
@@ -33,28 +23,29 @@
   $: infoRows = [
     {
       label: 'Product',
-      value: product ? `${product.name} (${product.sku})` : '-',
+      value: $receiveFlow.product ? `${$receiveFlow.product.name} (${$receiveFlow.product.sku})` : '-',
       icon: 'product' as const
     },
     {
       label: 'Quantity',
-      value: String(quantity),
+      value: String($receiveFlow.quantity),
       icon: 'quantity' as const
     },
     {
       label: 'Position',
-      value: position ? `${position.code} - ${position.zone}` : '-',
+      value: $receiveFlow.position ? `${$receiveFlow.position.code} - ${$receiveFlow.position.zone}` : '-',
       icon: 'location' as const
     },
     {
       label: 'Batch #',
-      value: batchNumber ?? 'Generating...',
+      value: $receiveFlow.batchNumber ?? 'Generating...',
       icon: 'batch' as const,
       highlight: 'success' as const
     }
   ];
 
   async function handleConfirm() {
+    const { product, position, quantity } = $receiveFlow;
     if (!product || !position || !$selectedDc || !$currentUser) {
       showError('Missing required data');
       return;
@@ -87,51 +78,29 @@
   }
 </script>
 
-<main class="page">
-  <BackNav href="/receive" />
+<PageLayout title="Confirm Receiving">
+  <BackNav slot="nav" href="/receive" />
+  <StepIndicator currentStep={2} totalSteps={2} stepName="Review and confirm" />
 
-  <div class="card">
-    <h1>Confirm Receiving</h1>
-    <StepIndicator currentStep={2} totalSteps={2} stepName="Review and confirm" />
-
-    <div class="info-section">
-      <InfoCard rows={infoRows} />
-    </div>
-
-    <div class="actions">
-      <Button variant="secondary" on:click={() => push('/receive')}>
-        Back
-      </Button>
-      <Button
-        loading={isSubmitting}
-        disabled={!product || !position || !batchNumber}
-        on:click={handleConfirm}
-      >
-        Confirm
-      </Button>
-    </div>
+  <div class="info-section">
+    <InfoCard rows={infoRows} />
   </div>
-</main>
+
+  <div class="actions">
+    <Button variant="secondary" on:click={() => push('/receive')}>
+      Back
+    </Button>
+    <Button
+      loading={isSubmitting}
+      disabled={!$receiveFlow.product || !$receiveFlow.position || !$receiveFlow.batchNumber}
+      on:click={handleConfirm}
+    >
+      Confirm
+    </Button>
+  </div>
+</PageLayout>
 
 <style>
-  .page {
-    min-height: 100vh;
-    padding: var(--space-md);
-    background: var(--color-bg-primary);
-  }
-
-  .card {
-    background: var(--color-bg-card);
-    border-radius: var(--radius-card);
-    padding: var(--space-lg);
-  }
-
-  h1 {
-    font-size: var(--font-size-section);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-xs);
-  }
-
   .info-section {
     margin-bottom: var(--space-lg);
   }

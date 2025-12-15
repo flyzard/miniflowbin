@@ -297,6 +297,7 @@
   .item-primary {
     flex: 1;
     font-size: var(--font-size-body);
+    color: var(--color-text-primary);
   }
 
   .item-secondary {

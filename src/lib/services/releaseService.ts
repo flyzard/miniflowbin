@@ -7,7 +7,6 @@
 import { transaction } from '../db/database';
 import {
   getBatchById,
-  decreaseBatchQuantity,
   updateBatchQuantity
 } from '../repositories/batchRepo';
 import { createTransaction } from '../repositories/transactionRepo';

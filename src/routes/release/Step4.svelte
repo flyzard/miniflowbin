@@ -1,53 +1,40 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, InfoCard, Button } from '../../lib/components';
+  import { BackNav, StepIndicator, InfoCard, Button, PageLayout } from '../../lib/components';
   import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { currentUser } from '../../lib/stores/auth';
-  import {
-    releaseFlowState,
-    resetReleaseFlow
-  } from '../../lib/stores/releaseFlow';
+  import { releaseFlow, resetReleaseFlow, effectiveQuantity } from '../../lib/stores/releaseFlow';
   import { executeRelease } from '../../lib/services/releaseService';
   import { ReleaseMode } from '../../lib/types';
 
   let isSubmitting = false;
 
-  // Get flow state
-  $: product = $releaseFlowState.product;
-  $: mode = $releaseFlowState.mode;
-  $: quantity = $releaseFlowState.quantity;
-  $: sourceBatch = $releaseFlowState.sourceBatch;
-  $: sourcePosition = $releaseFlowState.sourcePosition;
-  $: destinationPosition = $releaseFlowState.destinationPosition;
-
-  // Calculate effective quantity
-  $: effectiveQuantity = mode === ReleaseMode.FULL_BATCH
-    ? sourceBatch?.quantity ?? 0
-    : quantity ?? 0;
+  $: qty = effectiveQuantity($releaseFlow);
 
   // Build info rows for display
   $: infoRows = [
     {
       label: 'Product',
-      value: product ? `${product.name} (${product.sku})` : '-',
+      value: $releaseFlow.product ? `${$releaseFlow.product.name} (${$releaseFlow.product.sku})` : '-',
       icon: 'product' as const
     },
     {
       label: 'Quantity',
-      value: mode === ReleaseMode.FULL_BATCH
-        ? `${effectiveQuantity} (full batch)`
-        : String(effectiveQuantity),
+      value: $releaseFlow.mode === ReleaseMode.FULL_BATCH
+        ? `${qty} (full batch)`
+        : String(qty),
       icon: 'quantity' as const
     },
     {
       label: 'Batch #',
-      value: sourceBatch?.batch_number ?? '-',
+      value: $releaseFlow.sourceBatch?.batch_number ?? '-',
       icon: 'batch' as const
     }
   ];
 
   async function handleConfirm() {
+    const { sourceBatch, destinationPosition, mode } = $releaseFlow;
     if (!sourceBatch || !destinationPosition || !$selectedDc || !$currentUser) {
       showError('Missing required data');
       return;
@@ -58,7 +45,7 @@
     try {
       const result = executeRelease({
         batchId: sourceBatch.id,
-        quantity: effectiveQuantity,
+        quantity: qty,
         destinationPositionId: destinationPosition.id,
         userId: $currentUser.id,
         distributionCenterId: $selectedDc.id,
@@ -66,7 +53,7 @@
       });
 
       if (result.success) {
-        showSuccess(`Released ${result.releasedQuantity} units of ${product?.name}`);
+        showSuccess(`Released ${result.releasedQuantity} units of ${$releaseFlow.product?.name}`);
         resetReleaseFlow();
         push('/');
       } else {
@@ -81,70 +68,48 @@
   }
 </script>
 
-<main class="page">
-  <BackNav href="/release/destination" />
+<PageLayout title="Confirm Release">
+  <BackNav slot="nav" href="/release/destination" />
+  <StepIndicator currentStep={4} totalSteps={4} stepName="Review and confirm" />
 
-  <div class="card">
-    <h1>Confirm Release</h1>
-    <StepIndicator currentStep={4} totalSteps={4} stepName="Review and confirm" />
+  <div class="info-section">
+    <InfoCard rows={infoRows} />
+  </div>
 
-    <div class="info-section">
-      <InfoCard rows={infoRows} />
+  <div class="movement">
+    <div class="location from">
+      <span class="location-label">From</span>
+      <span class="location-value">{$releaseFlow.sourcePosition?.code ?? '-'}</span>
+      <span class="location-zone">{$releaseFlow.sourcePosition?.zone ?? ''}</span>
     </div>
-
-    <div class="movement">
-      <div class="location from">
-        <span class="location-label">From</span>
-        <span class="location-value">{sourcePosition?.code ?? '-'}</span>
-        <span class="location-zone">{sourcePosition?.zone ?? ''}</span>
-      </div>
-      <div class="arrow">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M5 12h14"/>
-          <path d="m12 5 7 7-7 7"/>
-        </svg>
-      </div>
-      <div class="location to">
-        <span class="location-label">To</span>
-        <span class="location-value">{destinationPosition?.code ?? '-'}</span>
-        <span class="location-zone">{destinationPosition?.zone ?? ''}</span>
-      </div>
+    <div class="arrow">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 12h14"/>
+        <path d="m12 5 7 7-7 7"/>
+      </svg>
     </div>
-
-    <div class="actions">
-      <Button variant="secondary" on:click={() => push('/release/destination')}>
-        Back
-      </Button>
-      <Button
-        loading={isSubmitting}
-        disabled={!sourceBatch || !destinationPosition}
-        on:click={handleConfirm}
-      >
-        Confirm
-      </Button>
+    <div class="location to">
+      <span class="location-label">To</span>
+      <span class="location-value">{$releaseFlow.destinationPosition?.code ?? '-'}</span>
+      <span class="location-zone">{$releaseFlow.destinationPosition?.zone ?? ''}</span>
     </div>
   </div>
-</main>
+
+  <div class="actions">
+    <Button variant="secondary" on:click={() => push('/release/destination')}>
+      Back
+    </Button>
+    <Button
+      loading={isSubmitting}
+      disabled={!$releaseFlow.sourceBatch || !$releaseFlow.destinationPosition}
+      on:click={handleConfirm}
+    >
+      Confirm
+    </Button>
+  </div>
+</PageLayout>
 
 <style>
-  .page {
-    min-height: 100vh;
-    padding: var(--space-md);
-    background: var(--color-bg-primary);
-  }
-
-  .card {
-    background: var(--color-bg-card);
-    border-radius: var(--radius-card);
-    padding: var(--space-lg);
-  }
-
-  h1 {
-    font-size: var(--font-size-section);
-    font-weight: var(--font-weight-semibold);
-    margin-bottom: var(--space-xs);
-  }
-
   .info-section {
     margin-bottom: var(--space-md);
   }

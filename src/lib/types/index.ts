@@ -60,6 +60,9 @@ export interface Product {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Optional inventory summary fields from queries
+  position_count?: number;
+  total_quantity?: number;
 }
 
 export interface StoragePosition {
@@ -75,6 +78,9 @@ export interface StoragePosition {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // Optional inventory summary fields from queries
+  batch_count?: number;
+  total_quantity?: number;
 }
 
 export interface InventoryBatch {
@@ -91,6 +97,11 @@ export interface InventoryBatch {
   distribution_center_id: string;
   created_at: string;
   updated_at: string;
+  // Optional joined fields from queries
+  product_name?: string;
+  product_sku?: string;
+  position_code?: string;
+  position_zone?: string;
 }
 
 export interface Transaction {
@@ -124,30 +135,6 @@ export interface AppSettings {
 }
 
 // ============================================================================
-// Joined / Computed Types
-// ============================================================================
-
-/** Batch with related product and position info */
-export interface BatchWithDetails extends InventoryBatch {
-  product_name: string;
-  product_sku: string;
-  position_code: string;
-  position_zone: string;
-}
-
-/** Position with available inventory summary */
-export interface PositionWithInventory extends StoragePosition {
-  batch_count: number;
-  total_quantity: number;
-}
-
-/** Product with inventory summary */
-export interface ProductWithInventory extends Product {
-  position_count: number;
-  total_quantity: number;
-}
-
-// ============================================================================
 // Flow State Types (for wizard flows)
 // ============================================================================
 
@@ -167,30 +154,6 @@ export interface ReleaseFlowState {
   destinationPosition: StoragePosition | null;
 }
 
-// ============================================================================
-// Utility Types
-// ============================================================================
-
-/** Generic search result with highlighted text */
-export interface SearchResult<T> {
-  item: T;
-  matchedField: string;
-  matchedText: string;
-}
-
-/** Pagination params */
-export interface PaginationParams {
-  limit: number;
-  offset: number;
-}
-
-/** Generic list response with pagination */
-export interface PaginatedList<T> {
-  items: T[];
-  total: number;
-  limit: number;
-  offset: number;
-}
 
 // ============================================================================
 // ID Generation
