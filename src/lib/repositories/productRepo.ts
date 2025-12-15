@@ -2,8 +2,9 @@
  * Product Repository
  */
 
-import { query, queryOne } from '../db/database';
+import { query, queryOne, exec } from '../db/database';
 import type { Product } from '../types';
+import { generateId, now } from '../types';
 
 /**
  * Get all products for a distribution center
@@ -60,4 +61,106 @@ export function listProductsWithInventory(distributionCenterId: string): Product
      ORDER BY p.name`,
     [distributionCenterId]
   );
+}
+
+/**
+ * Get a product by SKU within a distribution center
+ */
+export function getProductBySku(sku: string, distributionCenterId: string): Product | null {
+  return queryOne<Product>(
+    'SELECT * FROM products WHERE sku = ? AND distribution_center_id = ?',
+    [sku, distributionCenterId]
+  );
+}
+
+/**
+ * Create a new product
+ */
+export function createProduct(data: {
+  sku: string;
+  name: string | null;
+  description: string | null;
+  category: string | null;
+  color: string | null;
+  size: string | null;
+  unit_of_measure: string;
+  distributionCenterId: string;
+}): Product {
+  const id = generateId();
+  const timestamp = now();
+
+  exec(
+    `INSERT INTO products
+     (id, sku, name, description, category, color, size, unit_of_measure, distribution_center_id, is_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+    [
+      id,
+      data.sku,
+      data.name,
+      data.description,
+      data.category,
+      data.color,
+      data.size,
+      data.unit_of_measure,
+      data.distributionCenterId,
+      timestamp,
+      timestamp
+    ]
+  );
+
+  return getProductById(id)!;
+}
+
+/**
+ * Update an existing product
+ */
+export function updateProduct(id: string, data: {
+  name: string | null;
+  description: string | null;
+  category: string | null;
+  color: string | null;
+  size: string | null;
+}): void {
+  exec(
+    `UPDATE products
+     SET name = ?, description = ?, category = ?, color = ?, size = ?, updated_at = ?
+     WHERE id = ?`,
+    [data.name, data.description, data.category, data.color, data.size, now(), id]
+  );
+}
+
+/**
+ * Upsert a product (create if not exists, update if exists)
+ * Returns whether the product was created or updated
+ */
+export function upsertProduct(
+  data: {
+    sku: string;
+    name: string | null;
+    description: string | null;
+    category: string | null;
+    color: string | null;
+    size: string | null;
+    unit_of_measure: string;
+  },
+  distributionCenterId: string
+): 'created' | 'updated' {
+  const existing = getProductBySku(data.sku, distributionCenterId);
+
+  if (existing) {
+    updateProduct(existing.id, {
+      name: data.name,
+      description: data.description,
+      category: data.category,
+      color: data.color,
+      size: data.size
+    });
+    return 'updated';
+  } else {
+    createProduct({
+      ...data,
+      distributionCenterId
+    });
+    return 'created';
+  }
 }

@@ -13,14 +13,28 @@
     resetReleaseFlow();
     push('/release');
   }
+
+  function goToSettings() {
+    push('/settings');
+  }
 </script>
 
 <div class="home">
   <Header />
 
   <main class="content">
-    <h1 class="title">Product Restock</h1>
-    <p class="subtitle">Select an operation</p>
+    <div class="title-row">
+      <div>
+        <h1 class="title">Product Restock</h1>
+        <p class="subtitle">Select an operation</p>
+      </div>
+      <button class="settings-button" on:click={goToSettings} aria-label="Settings">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </div>
 
     <div class="operations">
       <button class="operation-card receive" on:click={goToReceive}>
@@ -73,7 +87,29 @@
   .subtitle {
     font-size: var(--font-size-body);
     color: var(--color-text-secondary);
+  }
+
+  .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: var(--space-xl);
+  }
+
+  .settings-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    border-radius: var(--radius-button);
+    color: var(--color-text-secondary);
+    transition: color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .settings-button:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-input);
   }
 
   .operations {

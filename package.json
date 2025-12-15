@@ -17,6 +17,7 @@
     "@testing-library/svelte": "^5.2.9",
     "@tsconfig/svelte": "^5.0.6",
     "@types/bun": "latest",
+    "@types/papaparse": "^5.5.2",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitest/coverage-v8": "^4.0.15",
     "jsdom": "^27.3.0",
@@ -30,6 +31,7 @@
   },
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.51.1-build2",
+    "papaparse": "^5.5.3",
     "svelte-spa-router": "^4.0.1"
   }
 }

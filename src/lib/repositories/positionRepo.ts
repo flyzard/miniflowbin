@@ -88,3 +88,103 @@ export function createPosition(data: {
 
   return getPositionById(id)!;
 }
+
+// ============================================================================
+// Bulk Import Operations
+// ============================================================================
+
+/**
+ * Get all positions for a distribution center (including inactive)
+ */
+export function listAllPositions(distributionCenterId: string): StoragePosition[] {
+  return query<StoragePosition>(
+    'SELECT * FROM storage_positions WHERE distribution_center_id = ? ORDER BY zone, code',
+    [distributionCenterId]
+  );
+}
+
+/**
+ * Create a position with all fields (for bulk import)
+ */
+export function createPositionBulk(data: {
+  code: string;
+  zone: string;
+  aisle: string;
+  rack: string;
+  level: string;
+  description: string | null;
+  is_active: boolean;
+  distributionCenterId: string;
+}): StoragePosition {
+  const id = generateId();
+  const timestamp = now();
+
+  exec(
+    `INSERT INTO storage_positions
+     (id, code, zone, zone_type, description, aisle, rack, level, distribution_center_id, is_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      data.code,
+      data.zone,
+      null, // zone_type not provided in CSV
+      data.description,
+      data.aisle,
+      data.rack,
+      data.level,
+      data.distributionCenterId,
+      data.is_active ? 1 : 0,
+      timestamp,
+      timestamp
+    ]
+  );
+
+  return getPositionById(id)!;
+}
+
+/**
+ * Update an existing position (for bulk import)
+ */
+export function updatePositionBulk(id: string, data: {
+  zone: string;
+  aisle: string;
+  rack: string;
+  level: string;
+  description: string | null;
+  is_active: boolean;
+}): void {
+  exec(
+    `UPDATE storage_positions
+     SET zone = ?, aisle = ?, rack = ?, level = ?, description = ?, is_active = ?, updated_at = ?
+     WHERE id = ?`,
+    [data.zone, data.aisle, data.rack, data.level, data.description, data.is_active ? 1 : 0, now(), id]
+  );
+}
+
+/**
+ * Mark a position as inactive (soft delete)
+ */
+export function markPositionInactive(id: string): void {
+  exec(
+    'UPDATE storage_positions SET is_active = 0, updated_at = ? WHERE id = ?',
+    [now(), id]
+  );
+}
+
+/**
+ * Delete a position (hard delete - only use for empty positions)
+ */
+export function deletePosition(id: string): void {
+  exec('DELETE FROM storage_positions WHERE id = ?', [id]);
+}
+
+/**
+ * Check if a position has inventory (batches with quantity > 0)
+ */
+export function positionHasInventory(id: string): boolean {
+  const result = queryOne<{ count: number }>(
+    'SELECT COUNT(*) as count FROM inventory_batches WHERE position_id = ? AND quantity > 0',
+    [id]
+  );
+  return (result?.count ?? 0) > 0;
+}

@@ -11,6 +11,9 @@
   import ReleaseStep1 from './routes/release/Step1.svelte';
   import ReleaseStep2 from './routes/release/Step2.svelte';
   import ReleaseStep3 from './routes/release/Step3.svelte';
+  import Settings from './routes/settings/Settings.svelte';
+  import ImportLayout from './routes/settings/ImportLayout.svelte';
+  import ImportProducts from './routes/settings/ImportProducts.svelte';
 
   // Route definitions
   const routes = {
@@ -20,6 +23,9 @@
     '/release': ReleaseStep1,
     '/release/source': ReleaseStep2,
     '/release/confirm': ReleaseStep3,
+    '/settings': Settings,
+    '/settings/import-layout': ImportLayout,
+    '/settings/import-products': ImportProducts,
     '*': Home
   };
 

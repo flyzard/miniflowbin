@@ -46,6 +46,8 @@ describe('receiveService', () => {
       name: 'Test Product',
       description: 'A test product',
       category: 'Test Category',
+      color: null,
+      size: null,
       unit_of_measure: 'units',
       distribution_center_id: 'dc-1',
       is_active: true,

@@ -3,7 +3,7 @@
  * Based on PRD Section 8: Data Model
  */
 
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 /**
  * SQL statements to create all tables
@@ -45,6 +45,8 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   description TEXT,
   category TEXT,
+  color TEXT,
+  size TEXT,
   unit_of_measure TEXT NOT NULL DEFAULT 'EA',
   distribution_center_id TEXT NOT NULL,
   is_active INTEGER NOT NULL DEFAULT 1,

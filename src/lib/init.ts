@@ -16,7 +16,6 @@ let initialized = false;
  *
  * - Initializes SQLite database
  * - Runs migrations
- * - Seeds sample data (if needed)
  * - Initializes auth and DC stores from saved settings
  */
 export async function initApp(): Promise<void> {
@@ -32,8 +31,8 @@ export async function initApp(): Promise<void> {
     await initDatabase();
     console.log('[Init] Database initialized');
 
-    // Run migrations and seed data
-    initializeSchema(true);
+    // Run migrations (no seeding - database starts empty)
+    initializeSchema();
     console.log('[Init] Schema initialized');
 
     // Initialize stores from saved settings

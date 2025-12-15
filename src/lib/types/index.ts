@@ -52,9 +52,11 @@ export interface DistributionCenter {
 export interface Product {
   id: string;
   sku: string;
-  name: string;
+  name: string | null;
   description: string | null;
   category: string | null;
+  color: string | null;
+  size: string | null;
   unit_of_measure: string;
   distribution_center_id: string;
   is_active: boolean;
