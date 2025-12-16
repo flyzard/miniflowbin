@@ -5,6 +5,7 @@
 import { exec, query, queryOne } from '../db/database';
 import type { InventoryBatch } from '../types';
 import { generateId, now } from '../types';
+import { getTodayDate } from '../utils/date';
 
 /**
  * Get a batch by ID
@@ -13,36 +14,6 @@ export async function getBatchById(id: string): Promise<InventoryBatch | null> {
   return await queryOne<InventoryBatch>(
     'SELECT * FROM inventory_batches WHERE id = ?',
     [id]
-  );
-}
-
-/**
- * Get a batch by batch number
- */
-export async function getBatchByNumber(batchNumber: string): Promise<InventoryBatch | null> {
-  return await queryOne<InventoryBatch>(
-    'SELECT * FROM inventory_batches WHERE batch_number = ?',
-    [batchNumber]
-  );
-}
-
-/**
- * Get all batches for a product
- */
-export async function listBatchesByProduct(productId: string): Promise<InventoryBatch[]> {
-  return await query<InventoryBatch>(
-    'SELECT * FROM inventory_batches WHERE product_id = ? AND quantity > 0 ORDER BY received_at',
-    [productId]
-  );
-}
-
-/**
- * Get all batches at a position
- */
-export async function listBatchesAtPosition(positionId: string): Promise<InventoryBatch[]> {
-  return await query<InventoryBatch>(
-    'SELECT * FROM inventory_batches WHERE position_id = ? AND quantity > 0 ORDER BY received_at',
-    [positionId]
   );
 }
 
@@ -117,32 +88,10 @@ export async function updateBatchQuantity(id: string, newQuantity: number): Prom
 }
 
 /**
- * Get total quantity of a product across all positions
- */
-export async function getTotalProductQuantity(productId: string): Promise<number> {
-  const result = await queryOne<{ total: number }>(
-    'SELECT COALESCE(SUM(quantity), 0) as total FROM inventory_batches WHERE product_id = ?',
-    [productId]
-  );
-  return result?.total ?? 0;
-}
-
-/**
- * Get available quantity at a specific position for a product
- */
-export async function getQuantityAtPosition(productId: string, positionId: string): Promise<number> {
-  const result = await queryOne<{ total: number }>(
-    'SELECT COALESCE(SUM(quantity), 0) as total FROM inventory_batches WHERE product_id = ? AND position_id = ?',
-    [productId, positionId]
-  );
-  return result?.total ?? 0;
-}
-
-/**
  * Get the count of batches created today (for batch number generation)
  */
 export async function getTodayBatchCount(distributionCenterId: string): Promise<number> {
-  const today = new Date().toISOString().split('T')[0] ?? ''; // YYYY-MM-DD
+  const today = getTodayDate();
   const result = await queryOne<{ count: number }>(
     `SELECT COUNT(*) as count FROM inventory_batches
      WHERE distribution_center_id = ?

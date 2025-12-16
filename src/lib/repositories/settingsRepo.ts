@@ -29,13 +29,6 @@ export async function setSetting(key: string, value: string): Promise<void> {
 }
 
 /**
- * Delete a setting
- */
-export async function deleteSetting(key: string): Promise<void> {
-  await exec('DELETE FROM app_settings WHERE key = ?', [key]);
-}
-
-/**
  * Get the selected distribution center ID
  */
 export async function getSelectedDcId(): Promise<string | null> {

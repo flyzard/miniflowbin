@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import Icon from './Icon.svelte';
   import type { StoragePosition } from '../types';
 
   export let label: string = 'Storage Position';
@@ -138,9 +139,7 @@
   {:else if currentLevel === 'shelf'}
     <!-- Shelf selection -->
     <button type="button" class="back-btn" on:click={goBack}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
+      <Icon name="arrow-left" size="xs" />
       Back
     </button>
     <div class="level-header">
@@ -165,9 +164,7 @@
   {:else if currentLevel === 'slot'}
     <!-- Slot selection -->
     <button type="button" class="back-btn" on:click={goBack}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M19 12H5M12 19l-7-7 7-7"/>
-      </svg>
+      <Icon name="arrow-left" size="xs" />
       Back
     </button>
     <div class="level-header">

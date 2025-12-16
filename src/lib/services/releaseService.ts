@@ -13,6 +13,7 @@ import { createTransaction } from '../repositories/transactionRepo';
 import { getPositionById, getPositionByCode, createPosition } from '../repositories/positionRepo';
 import { TransactionType } from '../types';
 import type { InventoryBatch, Transaction, Product, StoragePosition } from '../types';
+import { formatError, logError } from '../utils/error';
 
 export interface ReleaseInput {
   batchId: string;
@@ -124,10 +125,10 @@ export async function executeRelease(input: ReleaseInput): Promise<ReleaseResult
       remainingQuantity: result.remainingQuantity
     };
   } catch (error) {
-    console.error('[ReleaseService] Error executing release:', error);
+    logError('ReleaseService', 'Error executing release', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: formatError(error)
     };
   }
 }

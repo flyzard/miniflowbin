@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import Icon from './Icon.svelte';
 
   type T = $$Generic;
 
@@ -100,18 +101,15 @@
           on:click|stopPropagation={clear}
           aria-label="Clear selection"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+          <Icon name="x" size="xs" />
         </span>
       {/if}
     {:else}
       <span class="placeholder">{placeholder}</span>
     {/if}
-    <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="6 9 12 15 18 9"/>
-    </svg>
+    <span class="chevron">
+      <Icon name="chevron-down" size="md" />
+    </span>
   </button>
 
   {#if isOpen}
@@ -120,10 +118,7 @@
     <div class="backdrop" on:click={handleBackdropClick}></div>
     <div class="dropdown" role="listbox" tabindex="-1" on:keydown={handleKeydown}>
       <div class="search-wrapper">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.3-4.3"/>
-        </svg>
+        <Icon name="search" size="sm" />
         <input
           bind:this={inputElement}
           type="text"
@@ -153,9 +148,9 @@
                 </span>
               {/if}
               {#if value === item}
-                <svg class="check" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
+                <span class="check">
+                  <Icon name="check" size="sm" />
+                </span>
               {/if}
             </button>
           {/each}

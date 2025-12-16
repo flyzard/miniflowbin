@@ -1,6 +1,6 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, InfoCard, Button, PageLayout } from '../../lib/components';
+  import { BackNav, StepIndicator, InfoCard, Button, PageLayout, Icon } from '../../lib/components';
   import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { currentUser } from '../../lib/stores/auth';
@@ -94,10 +94,7 @@
       <span class="location-zone">{$releaseFlow.sourcePosition?.zone ?? ''}</span>
     </div>
     <div class="arrow">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M5 12h14"/>
-        <path d="m12 5 7 7-7 7"/>
-      </svg>
+      <Icon name="arrow-right" size="lg" />
     </div>
     <div class="location to">
       <span class="location-label">To</span>

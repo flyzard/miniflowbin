@@ -11,6 +11,8 @@ import { getProductById } from '../repositories/productRepo';
 import { getPositionById } from '../repositories/positionRepo';
 import { TransactionType } from '../types';
 import type { InventoryBatch, Transaction } from '../types';
+import { formatDateCompact, padNumber } from '../utils/date';
+import { formatError, logError } from '../utils/error';
 
 /**
  * Generate a new unique batch number
@@ -19,17 +21,9 @@ import type { InventoryBatch, Transaction } from '../types';
  * Example: BATCH-20251215-001
  */
 export async function generateBatchNumber(distributionCenterId: string): Promise<string> {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  const dateStr = `${year}${month}${day}`;
-
-  // Get count of batches already created today
+  const dateStr = formatDateCompact();
   const todayCount = await getTodayBatchCount(distributionCenterId);
-  const nextNumber = todayCount + 1;
-  const sequence = String(nextNumber).padStart(3, '0');
-
+  const sequence = padNumber(todayCount + 1, 3);
   return `BATCH-${dateStr}-${sequence}`;
 }
 
@@ -153,10 +147,10 @@ export async function executeReceive(input: ReceiveInput): Promise<ReceiveResult
       batchNumber
     };
   } catch (error) {
-    console.error('[ReceiveService] Error executing receive:', error);
+    logError('ReceiveService', 'Error executing receive', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: formatError(error)
     };
   }
 }
