@@ -24,9 +24,10 @@
     try {
       batches = await listBatchesWithDetails(productId);
       // Auto-select oldest batch (FIFO) when available and none selected
-      if (batches.length > 0 && !$releaseFlow.sourceBatch && !autoSelectDone) {
+      const firstBatch = batches[0];
+      if (firstBatch && !$releaseFlow.sourceBatch && !autoSelectDone) {
         autoSelectDone = true;
-        await handleBatchSelect(batches[0]);
+        await handleBatchSelect(firstBatch);
       }
     } catch (error) {
       console.error('Failed to load batches:', error);

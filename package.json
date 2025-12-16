@@ -37,5 +37,8 @@
     "@capacitor/core": "^8.0.0",
     "papaparse": "^5.5.3",
     "svelte-spa-router": "^4.0.1"
+  },
+  "overrides": {
+    "sql.js": "1.11.0"
   }
 }

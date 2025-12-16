@@ -6,3 +6,7 @@ declare module '*.svelte' {
   const component: ComponentType;
   export default component;
 }
+
+declare module 'jeep-sqlite/loader' {
+  export function defineCustomElements(win?: Window): Promise<void>;
+}

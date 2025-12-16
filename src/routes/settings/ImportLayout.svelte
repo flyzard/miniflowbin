@@ -82,7 +82,7 @@
           return;
         }
         // Generate preview
-        const preview = generatePreview(result.parsed, $selectedDc.id);
+        const preview = await generatePreview(result.parsed, $selectedDc.id);
         setPreview(preview);
         setStep('preview');
       }
@@ -112,7 +112,7 @@
     setStep('executing');
 
     try {
-      const result = executeImport(
+      const result = await executeImport(
         $layoutImportFlow.preview,
         $layoutImportFlow.orphanStrategy,
         $selectedDc.id
@@ -211,7 +211,7 @@
       {/if}
 
       <!-- Warnings -->
-      {#if $layoutImportFlow.validationResult?.warnings.length}
+      {#if $layoutImportFlow.validationResult?.warnings?.length}
         <div class="warnings-section">
           <h3 class="warnings-title">Warnings</h3>
           <ul class="warnings-list">
@@ -260,7 +260,7 @@
         </div>
 
         <!-- Orphan Strategy -->
-        {#if $layoutImportFlow.preview.orphanedEmpty > 0}
+        {#if $layoutImportFlow.preview?.orphanedEmpty > 0}
           <div class="orphan-section">
             <p class="orphan-info">
               <strong>{$layoutImportFlow.preview.orphanedEmpty}</strong> position(s) not in CSV (no inventory):
@@ -275,7 +275,7 @@
         {/if}
 
         <!-- Change Details -->
-        {#if $layoutImportFlow.preview.items.length > 0}
+        {#if $layoutImportFlow.preview?.items?.length > 0}
           <div class="changes-section">
             <h3 class="changes-title">Changes ({$layoutImportFlow.preview.items.length})</h3>
             <div class="changes-list">
@@ -297,15 +297,15 @@
                   {/if}
                 </div>
               {/each}
-              {#if $layoutImportFlow.preview.items.length > 20}
-                <p class="more-items">...and {$layoutImportFlow.preview.items.length - 20} more</p>
+              {#if ($layoutImportFlow.preview?.items?.length ?? 0) > 20}
+                <p class="more-items">...and {($layoutImportFlow.preview?.items?.length ?? 0) - 20} more</p>
               {/if}
             </div>
           </div>
         {/if}
 
         <!-- Warnings -->
-        {#if $layoutImportFlow.validationResult?.warnings.length}
+        {#if $layoutImportFlow.validationResult?.warnings?.length}
           <div class="warnings-section">
             <h3 class="warnings-title">Warnings</h3>
             <ul class="warnings-list">
@@ -379,7 +379,7 @@
             {/if}
           </div>
 
-          {#if $layoutImportFlow.result.errors.length > 0}
+          {#if $layoutImportFlow.result?.errors?.length > 0}
             <div class="result-errors">
               <h3>Errors:</h3>
               <ul>

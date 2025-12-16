@@ -90,7 +90,7 @@
     setProductImportStep('executing');
 
     try {
-      const result = executeProductImport(
+      const result = await executeProductImport(
         $productImportFlow.validationResult.parsed,
         $selectedDc.id
       );
@@ -188,7 +188,7 @@
       {/if}
 
       <!-- Warnings -->
-      {#if $productImportFlow.validationResult?.warnings.length}
+      {#if $productImportFlow.validationResult?.warnings?.length}
         <div class="warnings-section">
           <h3 class="warnings-title">Warnings</h3>
           <ul class="warnings-list">
@@ -256,7 +256,7 @@
             {/if}
           </div>
 
-          {#if $productImportFlow.result.errors.length > 0}
+          {#if $productImportFlow.result?.errors?.length > 0}
             <div class="result-errors">
               <h3>Errors:</h3>
               <ul>
