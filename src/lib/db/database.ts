@@ -13,6 +13,9 @@ const DB_NAME = 'flowbin';
 const sqlite = new SQLiteConnection(CapacitorSQLite);
 let db: SQLiteDBConnection | null = null;
 
+// Track if we're inside an explicit transaction (for Android compatibility)
+let inTransaction = false;
+
 /**
  * Initialize SQLite for web platform using jeep-sqlite
  */
@@ -133,15 +136,26 @@ function getDatabase(): SQLiteDBConnection {
 
 /**
  * Execute a SQL statement with optional parameters
- * Uses execute() for DDL (no params) and run() for DML (with params)
+ * Uses run() for single-statement DML and execute() for DDL/multi-statement SQL
+ *
+ * On Android, run() has an implicit transaction parameter that defaults to true.
+ * When we're inside an explicit transaction, we pass false to avoid conflicts.
  */
 export async function exec(sql: string, params?: unknown[]): Promise<void> {
   const database = getDatabase();
-  if (params && params.length > 0) {
-    // DML with parameters - use run()
-    await database.run(sql, params);
+  const trimmedSql = sql.trim().toUpperCase();
+
+  // Determine if this is a DML statement (INSERT, UPDATE, DELETE, REPLACE)
+  // These should use run() to avoid implicit transaction conflicts on Android
+  const isDML = /^(INSERT|UPDATE|DELETE|REPLACE)\b/.test(trimmedSql);
+
+  if (isDML) {
+    // DML statements - use run()
+    // Pass transaction=false when we're already in an explicit transaction (Android)
+    const useImplicitTransaction = !inTransaction;
+    await database.run(sql, params ?? [], useImplicitTransaction);
   } else {
-    // DDL or multi-statement SQL - use execute()
+    // DDL (CREATE, ALTER, DROP, etc.) or multi-statement SQL - use execute()
     await database.execute(sql);
   }
 }
@@ -191,14 +205,16 @@ export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
   }
 
   // Native platforms: use explicit transaction methods
-  // Check if transaction is already active
+  // Check if transaction is already active (either via our flag or plugin check)
   const isActive = await database.isTransactionActive();
-  if (isActive.result) {
+  if (isActive.result || inTransaction) {
     // Already in a transaction, just run the function
     return await fn();
   }
 
   // Use plugin's native transaction methods
+  // Set flag BEFORE beginTransaction so nested exec() calls know we're in a transaction
+  inTransaction = true;
   await database.beginTransaction();
   try {
     const result = await fn();
@@ -212,5 +228,8 @@ export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
       console.warn('[DB] Rollback failed:', rollbackError);
     }
     throw error;
+  } finally {
+    // Always reset flag
+    inTransaction = false;
   }
 }

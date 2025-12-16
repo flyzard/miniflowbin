@@ -3,7 +3,7 @@
   import { BackNav, StepIndicator, InfoCard, Button, PageLayout } from '../../lib/components';
   import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
-  import { currentUser } from '../../lib/stores/auth';
+  import { currentUser } from '../../lib/auth';
   import { receiveFlow, resetReceiveFlow } from '../../lib/stores/receiveFlow';
   import { executeReceive, generateBatchNumber } from '../../lib/services/receiveService';
   import { onMount } from 'svelte';

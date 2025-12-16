@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Laravel Valet .test domain (requires DNS setup on device) -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">flowbin.test</domain>
+        <trust-anchors>
+            <certificates src="user" />
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Allow cleartext (HTTP) for local development -->
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android emulator special IP for host machine -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Local network IPs -->
+        <domain includeSubdomains="true">192.168.1.0/24</domain>
+        <domain includeSubdomains="true">192.168.0.0/24</domain>
+        <!-- localhost variants -->
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+
+    <!-- Trust user-added CA certificates (for debug builds) -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="user" />
+            <certificates src="system" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

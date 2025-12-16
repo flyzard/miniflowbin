@@ -3,7 +3,7 @@
  * Based on PRD Section 8: Data Model
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 /**
  * SQL statements to create all tables
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS distribution_centers (
 CREATE INDEX IF NOT EXISTS idx_distribution_centers_code ON distribution_centers(code);
 CREATE INDEX IF NOT EXISTS idx_distribution_centers_active ON distribution_centers(is_active);
 
--- Users
+-- Users (with auth fields)
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
@@ -32,11 +32,25 @@ CREATE TABLE IF NOT EXISTS users (
   role TEXT NOT NULL DEFAULT 'ASSOCIATE',
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
-  updated_at TEXT NOT NULL
+  updated_at TEXT NOT NULL,
+  -- Auth fields (added in v3)
+  remote_user_id INTEGER,
+  email TEXT,
+  pin_hash TEXT,
+  pin_salt TEXT,
+  pin_attempts INTEGER NOT NULL DEFAULT 0,
+  pin_locked_until TEXT,
+  biometric_enabled INTEGER NOT NULL DEFAULT 0,
+  biometric_credential_id TEXT,
+  permissions TEXT,
+  last_login_at TEXT,
+  profile_synced_at TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_remote_id ON users(remote_user_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- Products
 CREATE TABLE IF NOT EXISTS products (
@@ -149,6 +163,34 @@ CREATE TABLE IF NOT EXISTS app_settings (
   value TEXT NOT NULL
 );
 
+-- Device Credentials (auth v3)
+CREATE TABLE IF NOT EXISTS device_credentials (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  device_id TEXT UNIQUE NOT NULL,
+  device_token_encrypted TEXT NOT NULL,
+  refresh_token_encrypted TEXT NOT NULL,
+  token_expires_at TEXT NOT NULL,
+  refresh_expires_at TEXT NOT NULL,
+  activated_at TEXT NOT NULL,
+  last_sync_at TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_device_credentials_device_id ON device_credentials(device_id);
+
+-- Auth Sessions (auth v3)
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  auth_method TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  ended_at TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_active ON auth_sessions(is_active);
+
 -- Schema version tracking
 CREATE TABLE IF NOT EXISTS schema_version (
   version INTEGER PRIMARY KEY,
@@ -157,15 +199,14 @@ CREATE TABLE IF NOT EXISTS schema_version (
 `;
 
 /**
- * SQL to drop all tables (for testing/reset)
+ * SQL to clear all inventory data (for fresh start on activation)
  */
-export const DROP_TABLES_SQL = `
-DROP TABLE IF EXISTS transactions;
-DROP TABLE IF EXISTS inventory_batches;
-DROP TABLE IF EXISTS storage_positions;
-DROP TABLE IF EXISTS products;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS distribution_centers;
-DROP TABLE IF EXISTS app_settings;
-DROP TABLE IF EXISTS schema_version;
+export const CLEAR_INVENTORY_DATA_SQL = `
+DELETE FROM transactions;
+DELETE FROM inventory_batches;
+DELETE FROM storage_positions;
+DELETE FROM products;
+DELETE FROM users;
+DELETE FROM distribution_centers;
+DELETE FROM app_settings WHERE key NOT IN ('schema_version');
 `;

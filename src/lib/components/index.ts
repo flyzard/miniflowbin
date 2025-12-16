@@ -16,3 +16,7 @@ export { default as PositionSelector } from './PositionSelector.svelte';
 export { default as Header } from './Header.svelte';
 export { default as Icon } from './Icon.svelte';
 export { default as PageLayout } from './PageLayout.svelte';
+
+// Auth components
+export { default as AuthGuard } from './AuthGuard.svelte';
+export { default as PinInput } from './PinInput.svelte';

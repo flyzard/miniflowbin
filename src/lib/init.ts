@@ -6,7 +6,7 @@
 
 import { initDatabase } from './db/database';
 import { initializeSchema } from './db/migrations';
-import { initAuth } from './stores/auth';
+import { initDeviceAuth } from './auth';
 import { initDistributionCenter } from './stores/distributionCenter';
 
 let initialized = false;
@@ -35,9 +35,9 @@ export async function initApp(): Promise<void> {
     await initializeSchema();
     console.log('[Init] Schema initialized');
 
-    // Initialize stores from saved settings
-    await initAuth();
-    console.log('[Init] Auth initialized');
+    // Initialize device auth (handles device activation, PIN, biometric)
+    await initDeviceAuth();
+    console.log('[Init] Device auth initialized');
 
     await initDistributionCenter();
     console.log('[Init] Distribution center initialized');
@@ -48,11 +48,4 @@ export async function initApp(): Promise<void> {
     console.error('[Init] Initialization failed:', error);
     throw error;
   }
-}
-
-/**
- * Check if app is initialized
- */
-export function isAppInitialized(): boolean {
-  return initialized;
 }

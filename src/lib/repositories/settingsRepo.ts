@@ -1,11 +1,11 @@
 /**
  * Settings Repository
  *
- * Handles app settings (key-value store), users, and distribution centers
+ * Handles app settings (key-value store) and distribution centers
  */
 
 import { exec, query, queryOne } from '../db/database';
-import type { AppSettings, User, DistributionCenter } from '../types';
+import type { AppSettings, DistributionCenter } from '../types';
 
 /**
  * Get a setting value by key
@@ -40,34 +40,6 @@ export async function getSelectedDcId(): Promise<string | null> {
  */
 export async function setSelectedDcId(dcId: string): Promise<void> {
   await setSetting('selected_dc_id', dcId);
-}
-
-/**
- * Get the current user ID
- */
-export async function getCurrentUserId(): Promise<string | null> {
-  return await getSetting('current_user_id');
-}
-
-/**
- * Set the current user ID
- */
-export async function setCurrentUserId(userId: string): Promise<void> {
-  await setSetting('current_user_id', userId);
-}
-
-// ============================================================================
-// Users
-// ============================================================================
-
-/**
- * Get a user by ID
- */
-export async function getUserById(id: string): Promise<User | null> {
-  return await queryOne<User>(
-    'SELECT * FROM users WHERE id = ?',
-    [id]
-  );
 }
 
 // ============================================================================

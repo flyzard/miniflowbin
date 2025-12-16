@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import Router from 'svelte-spa-router';
   import { initApp } from './lib/init';
-  import { Toast, LoadingSpinner } from './lib/components';
+  import { Toast, LoadingSpinner, AuthGuard } from './lib/components';
 
   // Import all routes
   import Home from './routes/Home.svelte';
@@ -12,8 +12,20 @@
   import ReleaseStep2 from './routes/release/Step2.svelte';
   import ReleaseStep3 from './routes/release/Step3.svelte';
 
+  // Auth routes
+  import Activate from './routes/auth/Activate.svelte';
+  import SetupPin from './routes/auth/SetupPin.svelte';
+  import Login from './routes/auth/Login.svelte';
+  import Locked from './routes/auth/Locked.svelte';
+
   // Route definitions
   const routes = {
+    // Auth routes
+    '/auth/activate': Activate,
+    '/auth/setup-pin': SetupPin,
+    '/auth/login': Login,
+    '/auth/locked': Locked,
+    // App routes
     '/': Home,
     '/receive': ReceiveStep1,
     '/receive/confirm': ReceiveStep2,
@@ -48,7 +60,9 @@
     <LoadingSpinner message="Initializing FlowBin..." size="large" />
   </div>
 {:else}
-  <Router {routes} />
+  <AuthGuard>
+    <Router {routes} />
+  </AuthGuard>
   <Toast />
 {/if}
 

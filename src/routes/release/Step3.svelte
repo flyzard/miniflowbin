@@ -3,7 +3,7 @@
   import { BackNav, StepIndicator, InfoCard, Button, PageLayout, Icon } from '../../lib/components';
   import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
-  import { currentUser } from '../../lib/stores/auth';
+  import { currentUser } from '../../lib/auth';
   import { releaseFlow, resetReleaseFlow, effectiveQuantity } from '../../lib/stores/releaseFlow';
   import { executeRelease, resolveDestinationPosition } from '../../lib/services/releaseService';
 
