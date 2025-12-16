@@ -98,18 +98,3 @@
     </Button>
   </div>
 </PageLayout>
-
-<style>
-  .info-section {
-    margin-bottom: var(--space-lg);
-  }
-
-  .actions {
-    display: flex;
-    gap: var(--space-md);
-  }
-
-  .actions :global(button) {
-    flex: 1;
-  }
-</style>

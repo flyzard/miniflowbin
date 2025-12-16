@@ -3,7 +3,8 @@
  * Manages state for the CSV product import
  */
 
-import { writable, derived } from 'svelte/store';
+import { derived } from 'svelte/store';
+import { createImportFlowStore } from './importFlowFactory';
 import type {
   ProductImportFlowState,
   ProductImportStep,
@@ -23,62 +24,49 @@ const initialState: ProductImportFlowState = {
 };
 
 /**
+ * Create the store using factory
+ */
+const flow = createImportFlowStore<
+  ProductImportStep,
+  ProductImportFlowState,
+  ProductValidationResult,
+  ProductImportResult
+>(initialState);
+
+/**
  * Main store
  */
-export const productImportFlow = writable<ProductImportFlowState>(initialState);
+export const productImportFlow = flow.store;
 
 /**
  * Reset the flow to initial state
  */
-export function resetProductImportFlow(): void {
-  productImportFlow.set(initialState);
-}
+export const resetProductImportFlow = flow.reset;
 
 /**
  * Set the current step
  */
-export function setProductImportStep(step: ProductImportStep): void {
-  productImportFlow.update(s => ({ ...s, step }));
-}
+export const setProductImportStep = flow.setStep;
 
 /**
  * Set the uploaded CSV data
  */
-export function setProductCsvData(fileName: string, rawCsv: string): void {
-  productImportFlow.update(s => ({
-    ...s,
-    fileName,
-    rawCsv
-  }));
-}
+export const setProductCsvData = flow.setCsvData;
 
 /**
  * Set the validation result
  */
-export function setProductValidationResult(result: ProductValidationResult): void {
-  productImportFlow.update(s => ({
-    ...s,
-    validationResult: result
-  }));
-}
+export const setProductValidationResult = flow.setValidationResult;
 
 /**
  * Set the import result
  */
-export function setProductImportResult(result: ProductImportResult): void {
-  productImportFlow.update(s => ({
-    ...s,
-    result
-  }));
-}
+export const setProductImportResult = flow.setResult;
 
 /**
  * Derived store: Can proceed to import
  */
-export const canProceedToImport = derived(
-  productImportFlow,
-  $state => $state.validationResult?.valid === true && ($state.validationResult?.parsed.length ?? 0) > 0
-);
+export const canProceedToImport = flow.canProceed;
 
 /**
  * Derived store: Total products to import

@@ -184,13 +184,4 @@
     color: var(--color-text-secondary);
     flex-shrink: 0;
   }
-
-  .actions {
-    display: flex;
-    gap: var(--space-md);
-  }
-
-  .actions :global(button) {
-    flex: 1;
-  }
 </style>

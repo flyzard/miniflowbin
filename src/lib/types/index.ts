@@ -182,24 +182,32 @@ export interface ImportPosition {
 }
 
 /**
- * Validation error for a specific row
+ * Generic validation error for CSV import operations
+ * Used by both layout and product imports
  */
-export interface CsvValidationError {
+export interface ValidationError {
   row: number;
   field: string;
   message: string;
   value?: string;
 }
 
+// Type alias for backward compatibility
+export type CsvValidationError = ValidationError;
+
 /**
- * Overall CSV validation result
+ * Generic CSV validation result
+ * @template T - The parsed item type (e.g., ImportPosition, ImportProduct)
  */
-export interface ImportValidationResult {
+export interface ValidationResult<T> {
   valid: boolean;
-  errors: CsvValidationError[];
+  errors: ValidationError[];
   warnings: string[];
-  parsed: ImportPosition[];
+  parsed: T[];
 }
+
+// Type alias for backward compatibility
+export type ImportValidationResult = ValidationResult<ImportPosition>;
 
 /**
  * Classification of what will happen to a position
@@ -319,25 +327,11 @@ export interface ImportProduct {
   unit_of_measure: string;
 }
 
-/**
- * Product validation error
- */
-export interface ProductValidationError {
-  row: number;
-  field: string;
-  message: string;
-  value?: string;
-}
+// Type alias for backward compatibility (uses generic ValidationError)
+export type ProductValidationError = ValidationError;
 
-/**
- * Product CSV validation result
- */
-export interface ProductValidationResult {
-  valid: boolean;
-  errors: ProductValidationError[];
-  warnings: string[];
-  parsed: ImportProduct[];
-}
+// Type alias for backward compatibility (uses generic ValidationResult)
+export type ProductValidationResult = ValidationResult<ImportProduct>;
 
 /**
  * Result of product import execution

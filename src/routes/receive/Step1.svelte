@@ -55,7 +55,7 @@
   <BackNav slot="nav" href="/" />
   <StepIndicator currentStep={1} totalSteps={2} stepName="Enter details" />
 
-  <div class="form">
+  <div class="form-section">
     <SearchDropdown
       label="Product"
       placeholder="Select a product..."
@@ -91,11 +91,3 @@
   </Button>
 </PageLayout>
 
-<style>
-  .form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-lg);
-    margin-bottom: var(--space-lg);
-  }
-</style>

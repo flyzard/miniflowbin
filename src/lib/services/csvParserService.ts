@@ -7,20 +7,25 @@ import Papa from 'papaparse';
 import type { CsvPositionRow, CsvProductRow } from '../types';
 import { REQUIRED_HEADERS, PRODUCT_REQUIRED_HEADERS } from '../types';
 
+// ============================================================================
+// Generic Types and Functions
+// ============================================================================
+
 /**
- * Result of parsing a CSV file
+ * Generic result of parsing a CSV file
  */
-export interface ParseResult {
-  data: CsvPositionRow[];
+export interface CsvParseResult<T> {
+  data: T[];
   errors: Papa.ParseError[];
   headers: string[];
 }
 
 /**
- * Parse CSV string into typed rows
+ * Generic CSV parsing function
+ * @template T - The row type (e.g., CsvPositionRow, CsvProductRow)
  */
-export function parseLayoutCsv(csvContent: string): ParseResult {
-  const result = Papa.parse<CsvPositionRow>(csvContent, {
+export function parseCsv<T>(csvContent: string): CsvParseResult<T> {
+  const result = Papa.parse<T>(csvContent, {
     header: true,
     skipEmptyLines: true,
     transformHeader: (header) => header.trim().toLowerCase(),
@@ -35,11 +40,14 @@ export function parseLayoutCsv(csvContent: string): ParseResult {
 }
 
 /**
- * Validate that required CSV headers are present
+ * Generic header validation function
  */
-export function validateHeaders(headers: string[]): { valid: boolean; missing: string[] } {
+export function validateCsvHeaders(
+  headers: string[],
+  requiredHeaders: readonly string[]
+): { valid: boolean; missing: string[] } {
   const normalizedHeaders = headers.map(h => h.toLowerCase().trim());
-  const missing = REQUIRED_HEADERS.filter(req => !normalizedHeaders.includes(req));
+  const missing = requiredHeaders.filter(req => !normalizedHeaders.includes(req));
   return {
     valid: missing.length === 0,
     missing
@@ -47,19 +55,17 @@ export function validateHeaders(headers: string[]): { valid: boolean; missing: s
 }
 
 /**
- * Generate a template CSV content for download
+ * Generic template CSV generation
  */
-export function generateTemplateCsv(): string {
-  const headers = ['zone', 'slot_code', 'aisle', 'column', 'level', 'capacity_units', 'max_weight_kg', 'status', 'notes'];
-  const exampleRows = [
-    ['A', 'A-01-1', '1', '1', '1', '1', '500.00', 'available', 'Ground level slot'],
-    ['A', 'A-01-2', '1', '1', '2', '1', '500.00', 'available', ''],
-    ['B', 'B-01-1', '2', '1', '1', '2', '1000.00', 'available', 'Double capacity slot']
-  ];
+export interface CsvTemplateConfig {
+  headers: string[];
+  exampleRows: string[][];
+}
 
+export function generateCsvTemplate(config: CsvTemplateConfig): string {
   return Papa.unparse({
-    fields: headers,
-    data: exampleRows
+    fields: config.headers,
+    data: config.exampleRows
   });
 }
 
@@ -76,61 +82,53 @@ export function downloadCsv(content: string, filename: string): void {
 }
 
 // ============================================================================
-// Product CSV Functions
+// Layout CSV Functions (backward-compatible wrappers)
 // ============================================================================
 
-/**
- * Result of parsing a product CSV file
- */
-export interface ProductParseResult {
-  data: CsvProductRow[];
-  errors: Papa.ParseError[];
-  headers: string[];
-}
+/** @deprecated Use CsvParseResult<CsvPositionRow> instead */
+export type ParseResult = CsvParseResult<CsvPositionRow>;
 
-/**
- * Parse product CSV string into typed rows
- */
-export function parseProductCsv(csvContent: string): ProductParseResult {
-  const result = Papa.parse<CsvProductRow>(csvContent, {
-    header: true,
-    skipEmptyLines: true,
-    transformHeader: (header) => header.trim().toLowerCase(),
-    transform: (value) => value.trim()
-  });
+/** Backward-compatible wrapper for parsing layout CSV */
+export const parseLayoutCsv = (csvContent: string) => parseCsv<CsvPositionRow>(csvContent);
 
-  return {
-    data: result.data,
-    errors: result.errors,
-    headers: result.meta.fields ?? []
-  };
-}
+/** Backward-compatible wrapper for validating layout headers */
+export const validateHeaders = (headers: string[]) => validateCsvHeaders(headers, REQUIRED_HEADERS);
 
-/**
- * Validate that required product CSV headers are present
- */
-export function validateProductHeaders(headers: string[]): { valid: boolean; missing: string[] } {
-  const normalizedHeaders = headers.map(h => h.toLowerCase().trim());
-  const missing = PRODUCT_REQUIRED_HEADERS.filter(req => !normalizedHeaders.includes(req));
-  return {
-    valid: missing.length === 0,
-    missing
-  };
-}
+/** Layout template configuration */
+const LAYOUT_TEMPLATE_CONFIG: CsvTemplateConfig = {
+  headers: ['zone', 'slot_code', 'aisle', 'column', 'level', 'capacity_units', 'max_weight_kg', 'status', 'notes'],
+  exampleRows: [
+    ['A', 'A-01-1', '1', '1', '1', '1', '500.00', 'available', 'Ground level slot'],
+    ['A', 'A-01-2', '1', '1', '2', '1', '500.00', 'available', ''],
+    ['B', 'B-01-1', '2', '1', '1', '2', '1000.00', 'available', 'Double capacity slot']
+  ]
+};
 
-/**
- * Generate a product template CSV content for download
- */
-export function generateProductTemplateCsv(): string {
-  const headers = ['sku', 'name', 'description', 'category', 'color', 'size'];
-  const exampleRows = [
+/** Backward-compatible wrapper for generating layout template */
+export const generateTemplateCsv = () => generateCsvTemplate(LAYOUT_TEMPLATE_CONFIG);
+
+// ============================================================================
+// Product CSV Functions (backward-compatible wrappers)
+// ============================================================================
+
+/** @deprecated Use CsvParseResult<CsvProductRow> instead */
+export type ProductParseResult = CsvParseResult<CsvProductRow>;
+
+/** Backward-compatible wrapper for parsing product CSV */
+export const parseProductCsv = (csvContent: string) => parseCsv<CsvProductRow>(csvContent);
+
+/** Backward-compatible wrapper for validating product headers */
+export const validateProductHeaders = (headers: string[]) => validateCsvHeaders(headers, PRODUCT_REQUIRED_HEADERS);
+
+/** Product template configuration */
+const PRODUCT_TEMPLATE_CONFIG: CsvTemplateConfig = {
+  headers: ['sku', 'name', 'description', 'category', 'color', 'size'],
+  exampleRows: [
     ['PROD-001', 'Example Product', 'Product description', 'Category A', 'Red', 'Large'],
     ['PROD-002', 'Another Product', 'Another description', 'Category B', 'Blue', 'Medium'],
     ['PROD-003', 'Third Product', '', 'Category A', '', 'Small']
-  ];
+  ]
+};
 
-  return Papa.unparse({
-    fields: headers,
-    data: exampleRows
-  });
-}
+/** Backward-compatible wrapper for generating product template */
+export const generateProductTemplateCsv = () => generateCsvTemplate(PRODUCT_TEMPLATE_CONFIG);

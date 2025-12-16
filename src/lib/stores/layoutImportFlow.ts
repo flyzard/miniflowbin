@@ -3,7 +3,8 @@
  * Manages state for the CSV import wizard
  */
 
-import { writable, derived } from 'svelte/store';
+import { derived } from 'svelte/store';
+import { createImportFlowStore } from './importFlowFactory';
 import type {
   LayoutImportFlowState,
   ImportStep,
@@ -27,82 +28,63 @@ const initialState: LayoutImportFlowState = {
 };
 
 /**
+ * Create the store using factory
+ */
+const flow = createImportFlowStore<
+  ImportStep,
+  LayoutImportFlowState,
+  ImportValidationResult,
+  ImportResult
+>(initialState);
+
+/**
  * Main store
  */
-export const layoutImportFlow = writable<LayoutImportFlowState>(initialState);
+export const layoutImportFlow = flow.store;
 
 /**
  * Reset the flow to initial state
  */
-export function resetLayoutImportFlow(): void {
-  layoutImportFlow.set(initialState);
-}
+export const resetLayoutImportFlow = flow.reset;
 
 /**
  * Set the current step
  */
-export function setStep(step: ImportStep): void {
-  layoutImportFlow.update(s => ({ ...s, step }));
-}
+export const setStep = flow.setStep;
 
 /**
  * Set the uploaded CSV data
  */
-export function setCsvData(fileName: string, rawCsv: string): void {
-  layoutImportFlow.update(s => ({
-    ...s,
-    fileName,
-    rawCsv
-  }));
-}
+export const setCsvData = flow.setCsvData;
 
 /**
  * Set the validation result
  */
-export function setValidationResult(result: ImportValidationResult): void {
-  layoutImportFlow.update(s => ({
-    ...s,
-    validationResult: result
-  }));
-}
-
-/**
- * Set the preview summary
- */
-export function setPreview(preview: ImportPreviewSummary): void {
-  layoutImportFlow.update(s => ({
-    ...s,
-    preview
-  }));
-}
-
-/**
- * Set the orphan strategy
- */
-export function setOrphanStrategy(strategy: OrphanStrategy): void {
-  layoutImportFlow.update(s => ({
-    ...s,
-    orphanStrategy: strategy
-  }));
-}
+export const setValidationResult = flow.setValidationResult;
 
 /**
  * Set the import result
  */
-export function setImportResult(result: ImportResult): void {
-  layoutImportFlow.update(s => ({
-    ...s,
-    result
-  }));
+export const setImportResult = flow.setResult;
+
+/**
+ * Set the preview summary (layout-specific)
+ */
+export function setPreview(preview: ImportPreviewSummary): void {
+  flow.update(() => ({ preview }));
+}
+
+/**
+ * Set the orphan strategy (layout-specific)
+ */
+export function setOrphanStrategy(strategy: OrphanStrategy): void {
+  flow.update(() => ({ orphanStrategy: strategy }));
 }
 
 /**
  * Derived store: Can proceed to preview step
  */
-export const canProceedToPreview = derived(
-  layoutImportFlow,
-  $state => $state.validationResult?.valid === true
-);
+export const canProceedToPreview = flow.canProceed;
 
 /**
  * Derived store: Has any changes to apply

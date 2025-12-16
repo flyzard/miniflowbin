@@ -48,10 +48,4 @@
     font-size: var(--font-size-secondary);
     color: var(--color-text-secondary);
   }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 </style>

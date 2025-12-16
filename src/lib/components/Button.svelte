@@ -91,10 +91,4 @@
   .loading .spinner {
     position: absolute;
   }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 </style>

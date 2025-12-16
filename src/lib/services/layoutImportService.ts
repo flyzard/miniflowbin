@@ -4,7 +4,6 @@
  */
 
 import { transaction } from '../db/database';
-import { parseLayoutCsv, validateHeaders } from './csvParserService';
 import {
   listAllPositions,
   createPositionBulk,
@@ -13,16 +12,16 @@ import {
   markPositionInactive,
   positionHasInventory
 } from '../repositories/positionRepo';
+import { validateCsvContent, type CsvValidationConfig } from './csvValidationUtils';
 import type {
   CsvPositionRow,
   ImportPosition,
   ImportPreviewItem,
   ImportPreviewSummary,
   ImportValidationResult,
-  CsvValidationError,
+  ValidationError,
   OrphanStrategy,
-  ImportResult,
-  ImportAction
+  ImportResult
 } from '../types';
 import { STATUS_MAP, KNOWN_HEADERS, REQUIRED_HEADERS } from '../types';
 
@@ -45,8 +44,8 @@ function transformRow(row: CsvPositionRow): ImportPosition {
 /**
  * Validate a single CSV row
  */
-function validateRow(row: CsvPositionRow, rowIndex: number): CsvValidationError[] {
-  const errors: CsvValidationError[] = [];
+function validateRow(row: CsvPositionRow, rowIndex: number): ValidationError[] {
+  const errors: ValidationError[] = [];
 
   // Required field validation
   if (!row.zone?.trim()) {
@@ -79,135 +78,61 @@ function validateRow(row: CsvPositionRow, rowIndex: number): CsvValidationError[
     }
   }
 
-  // Status validation (warn for unknown values)
-  if (row.status?.trim()) {
-    const status = row.status.toLowerCase().trim();
-    if (!Object.keys(STATUS_MAP).includes(status)) {
-      // This is a warning, not an error - will default to active
-      // We'll handle this separately
-    }
-  }
-
   return errors;
 }
+
+/**
+ * Layout-specific header warnings
+ */
+function getLayoutHeaderWarnings(headers: string[]): string[] {
+  const warnings: string[] = [];
+  const hasCapacity = headers.some(h => h.toLowerCase() === 'capacity_units');
+  const hasWeight = headers.some(h => h.toLowerCase() === 'max_weight_kg');
+  if (hasCapacity || hasWeight) {
+    const ignored = [hasCapacity && 'capacity_units', hasWeight && 'max_weight_kg'].filter(Boolean);
+    warnings.push(`${ignored.join(' and ')} field(s) will be ignored (not supported)`);
+  }
+  return warnings;
+}
+
+/**
+ * Validation config for layout CSV
+ */
+const layoutValidationConfig: CsvValidationConfig<CsvPositionRow, ImportPosition> = {
+  requiredHeaders: REQUIRED_HEADERS,
+  knownHeaders: KNOWN_HEADERS,
+  primaryKeyField: 'slot_code',
+  transformRow,
+  validateRow,
+  customHeaderWarnings: getLayoutHeaderWarnings
+};
 
 /**
  * Validate entire CSV content
  */
 export function validateCsv(csvContent: string): ImportValidationResult {
-  const errors: CsvValidationError[] = [];
-  const warnings: string[] = [];
+  const result = validateCsvContent(csvContent, layoutValidationConfig);
 
-  // Check for empty content
-  if (!csvContent.trim()) {
-    errors.push({
-      row: 0,
-      field: 'file',
-      message: 'File is empty'
-    });
-    return { valid: false, errors, warnings, parsed: [] };
-  }
+  // Layout-specific: add warnings for unknown status values per row
+  // This requires parsing again but only for warnings
+  if (result.valid || result.parsed.length > 0) {
+    // Re-parse to check status warnings (only for rows that passed validation)
+    const lines = csvContent.trim().split('\n');
+    const headers = lines[0]?.toLowerCase().split(',').map(h => h.trim()) ?? [];
+    const statusIndex = headers.indexOf('status');
 
-  // Parse CSV
-  const parseResult = parseLayoutCsv(csvContent);
-
-  // Check for parse errors
-  if (parseResult.errors.length > 0) {
-    for (const err of parseResult.errors) {
-      errors.push({
-        row: err.row ?? 0,
-        field: 'csv',
-        message: err.message
-      });
-    }
-    return { valid: false, errors, warnings, parsed: [] };
-  }
-
-  // Check for empty data
-  if (parseResult.data.length === 0) {
-    errors.push({
-      row: 0,
-      field: 'file',
-      message: 'No data rows found (only headers)'
-    });
-    return { valid: false, errors, warnings, parsed: [] };
-  }
-
-  // Validate headers
-  const headerValidation = validateHeaders(parseResult.headers);
-  if (!headerValidation.valid) {
-    errors.push({
-      row: 1,
-      field: 'headers',
-      message: `Missing required headers: ${headerValidation.missing.join(', ')}`
-    });
-    return { valid: false, errors, warnings, parsed: [] };
-  }
-
-  // Check for unknown headers
-  const unknownHeaders = parseResult.headers.filter(
-    h => !KNOWN_HEADERS.includes(h.toLowerCase() as typeof KNOWN_HEADERS[number])
-  );
-  if (unknownHeaders.length > 0) {
-    warnings.push(`Unknown columns will be ignored: ${unknownHeaders.join(', ')}`);
-  }
-
-  // Warn about ignored capacity/weight fields
-  const hasCapacity = parseResult.headers.some(h => h.toLowerCase() === 'capacity_units');
-  const hasWeight = parseResult.headers.some(h => h.toLowerCase() === 'max_weight_kg');
-  if (hasCapacity || hasWeight) {
-    const ignored = [hasCapacity && 'capacity_units', hasWeight && 'max_weight_kg'].filter(Boolean);
-    warnings.push(`${ignored.join(' and ')} field(s) will be ignored (not supported)`);
-  }
-
-  // Validate each row
-  const seenCodes = new Map<string, number>(); // code -> first row number
-  const parsed: ImportPosition[] = [];
-
-  for (let i = 0; i < parseResult.data.length; i++) {
-    const row = parseResult.data[i];
-    if (!row) continue;
-
-    const rowNumber = i + 2; // +2 for 1-indexed + header row
-    const rowErrors = validateRow(row, rowNumber);
-    errors.push(...rowErrors);
-
-    // Check for duplicates within file
-    if (row.slot_code?.trim()) {
-      const code = row.slot_code.trim();
-      const firstRow = seenCodes.get(code);
-      if (firstRow !== undefined) {
-        errors.push({
-          row: rowNumber,
-          field: 'slot_code',
-          message: `Duplicate slot code "${code}" (first seen on row ${firstRow})`,
-          value: code
-        });
-      } else {
-        seenCodes.set(code, rowNumber);
+    if (statusIndex >= 0) {
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i]?.split(',') ?? [];
+        const status = values[statusIndex]?.trim().toLowerCase();
+        if (status && !Object.keys(STATUS_MAP).includes(status)) {
+          result.warnings.push(`Row ${i + 1}: Unknown status "${status}" will default to active`);
+        }
       }
     }
-
-    // Check for unknown status values (warning only)
-    if (row.status?.trim()) {
-      const status = row.status.toLowerCase().trim();
-      if (!Object.keys(STATUS_MAP).includes(status)) {
-        warnings.push(`Row ${rowNumber}: Unknown status "${row.status}" will default to active`);
-      }
-    }
-
-    // Only add to parsed if no errors for this row
-    if (rowErrors.length === 0) {
-      parsed.push(transformRow(row));
-    }
   }
 
-  return {
-    valid: errors.length === 0,
-    errors,
-    warnings,
-    parsed
-  };
+  return result;
 }
 
 /**
