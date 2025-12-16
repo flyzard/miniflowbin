@@ -9,8 +9,8 @@ import { generateId, now } from '../types';
 /**
  * Get a transaction by ID
  */
-export function getTransactionById(id: string): Transaction | null {
-  return queryOne<Transaction>(
+export async function getTransactionById(id: string): Promise<Transaction | null> {
+  return await queryOne<Transaction>(
     'SELECT * FROM transactions WHERE id = ?',
     [id]
   );
@@ -19,7 +19,7 @@ export function getTransactionById(id: string): Transaction | null {
 /**
  * Create a new transaction
  */
-export function createTransaction(data: {
+export async function createTransaction(data: {
   type: TransactionType;
   productId: string;
   batchId?: string;
@@ -29,11 +29,11 @@ export function createTransaction(data: {
   userId: string;
   distributionCenterId: string;
   notes?: string;
-}): Transaction {
+}): Promise<Transaction> {
   const id = generateId();
   const timestamp = now();
 
-  exec(
+  await exec(
     `INSERT INTO transactions
      (id, type, product_id, batch_id, from_position_id, to_position_id, quantity, timestamp, user_id, distribution_center_id, notes, created_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -53,17 +53,17 @@ export function createTransaction(data: {
     ]
   );
 
-  return getTransactionById(id)!;
+  return (await getTransactionById(id))!;
 }
 
 /**
  * List recent transactions for a distribution center
  */
-export function listRecentTransactions(
+export async function listRecentTransactions(
   distributionCenterId: string,
   limit: number = 50
-): Transaction[] {
-  return query<Transaction>(
+): Promise<Transaction[]> {
+  return await query<Transaction>(
     'SELECT * FROM transactions WHERE distribution_center_id = ? ORDER BY timestamp DESC LIMIT ?',
     [distributionCenterId, limit]
   );
@@ -72,12 +72,12 @@ export function listRecentTransactions(
 /**
  * List transactions by type
  */
-export function listTransactionsByType(
+export async function listTransactionsByType(
   type: TransactionType,
   distributionCenterId: string,
   limit: number = 50
-): Transaction[] {
-  return query<Transaction>(
+): Promise<Transaction[]> {
+  return await query<Transaction>(
     'SELECT * FROM transactions WHERE type = ? AND distribution_center_id = ? ORDER BY timestamp DESC LIMIT ?',
     [type, distributionCenterId, limit]
   );
@@ -86,11 +86,11 @@ export function listTransactionsByType(
 /**
  * List transactions for a product
  */
-export function listTransactionsForProduct(
+export async function listTransactionsForProduct(
   productId: string,
   limit: number = 50
-): Transaction[] {
-  return query<Transaction>(
+): Promise<Transaction[]> {
+  return await query<Transaction>(
     'SELECT * FROM transactions WHERE product_id = ? ORDER BY timestamp DESC LIMIT ?',
     [productId, limit]
   );
@@ -99,8 +99,8 @@ export function listTransactionsForProduct(
 /**
  * List transactions for a batch
  */
-export function listTransactionsForBatch(batchId: string): Transaction[] {
-  return query<Transaction>(
+export async function listTransactionsForBatch(batchId: string): Promise<Transaction[]> {
+  return await query<Transaction>(
     'SELECT * FROM transactions WHERE batch_id = ? ORDER BY timestamp DESC',
     [batchId]
   );
@@ -109,11 +109,11 @@ export function listTransactionsForBatch(batchId: string): Transaction[] {
 /**
  * List transactions by user
  */
-export function listTransactionsByUser(
+export async function listTransactionsByUser(
   userId: string,
   limit: number = 50
-): Transaction[] {
-  return query<Transaction>(
+): Promise<Transaction[]> {
+  return await query<Transaction>(
     'SELECT * FROM transactions WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?',
     [userId, limit]
   );
@@ -122,12 +122,12 @@ export function listTransactionsByUser(
 /**
  * Get transaction count by type for today
  */
-export function getTodayTransactionCount(
+export async function getTodayTransactionCount(
   type: TransactionType,
   distributionCenterId: string
-): number {
+): Promise<number> {
   const today = new Date().toISOString().split('T')[0] ?? '';
-  const result = queryOne<{ count: number }>(
+  const result = await queryOne<{ count: number }>(
     `SELECT COUNT(*) as count FROM transactions
      WHERE type = ? AND distribution_center_id = ? AND DATE(timestamp) = ?`,
     [type as string, distributionCenterId, today]

@@ -19,19 +19,19 @@ const selectedDcStore = writable<DistributionCenter | null>(null);
 /**
  * Initialize distribution center from stored settings
  */
-export function initDistributionCenter(): void {
+export async function initDistributionCenter(): Promise<void> {
   // Load available DCs
-  const dcs = listActiveDistributionCenters();
+  const dcs = await listActiveDistributionCenters();
 
   // Load selected DC from settings
-  const dcId = getSelectedDcId();
+  const dcId = await getSelectedDcId();
   if (dcId) {
-    const dc = getDistributionCenterById(dcId);
+    const dc = await getDistributionCenterById(dcId);
     selectedDcStore.set(dc);
   } else if (dcs.length === 1 && dcs[0]) {
     // Auto-select if only one DC
     selectedDcStore.set(dcs[0]);
-    setSelectedDcId(dcs[0].id);
+    await setSelectedDcId(dcs[0].id);
   }
 }
 

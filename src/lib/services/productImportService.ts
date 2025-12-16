@@ -154,20 +154,20 @@ export function validateProductCsv(csvContent: string): ProductValidationResult 
 /**
  * Execute the product import
  */
-export function executeProductImport(
+export async function executeProductImport(
   validated: ImportProduct[],
   distributionCenterId: string
-): ProductImportResult {
+): Promise<ProductImportResult> {
   let created = 0;
   let updated = 0;
   let skipped = 0;
   const errors: string[] = [];
 
   try {
-    transaction(() => {
+    await transaction(async () => {
       for (const product of validated) {
         try {
-          const result = upsertProduct(product, distributionCenterId);
+          const result = await upsertProduct(product, distributionCenterId);
           if (result === 'created') {
             created++;
           } else {

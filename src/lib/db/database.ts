@@ -1,97 +1,78 @@
 /**
- * SQLite WASM Database Module
+ * Capacitor SQLite Database Module
  *
- * Provides persistent local storage using SQLite WASM with:
- * - OPFS (Origin Private File System) as primary storage (Chrome, Edge, Firefox)
- * - IndexedDB as fallback for Safari
+ * Provides persistent local storage using native SQLite via Capacitor.
+ * All operations are async for native platform compatibility.
  */
 
-import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import type { Database, SqlValue } from '@sqlite.org/sqlite-wasm';
+import { Capacitor } from '@capacitor/core';
+import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 
-let db: Database | null = null;
-let initPromise: Promise<Database> | null = null;
-
-// Database file name
-const DB_NAME = 'flowbin.db';
-
-/**
- * Check if OPFS is available in the current browser
- */
-async function isOPFSAvailable(): Promise<boolean> {
-  try {
-    if (!navigator.storage?.getDirectory) return false;
-    const root = await navigator.storage.getDirectory();
-    // Try to create and remove a test file
-    await root.getFileHandle('__opfs_test__', { create: true });
-    await root.removeEntry('__opfs_test__');
-    return true;
-  } catch {
-    return false;
-  }
-}
+const DB_NAME = 'flowbin';
+const sqlite = new SQLiteConnection(CapacitorSQLite);
+let db: SQLiteDBConnection | null = null;
 
 /**
  * Initialize the SQLite database
- * Returns a singleton database instance
+ * Must be called before any other database operations
  */
-export async function initDatabase(): Promise<Database> {
-  // Return existing promise if initialization is in progress
-  if (initPromise) return initPromise;
+export async function initDatabase(): Promise<void> {
+  if (db) return;
 
-  // Return existing database if already initialized
-  if (db) return db;
+  console.log('[DB] Initializing Capacitor SQLite...');
 
-  initPromise = (async () => {
-    console.log('[DB] Initializing SQLite WASM...');
+  const platform = Capacitor.getPlatform();
+  console.log('[DB] Running on platform:', platform);
 
-    const sqlite3 = await sqlite3InitModule({
-      print: console.log,
-      printErr: console.error,
-    });
-
-    console.log('[DB] SQLite version:', sqlite3.version.libVersion);
-
-    const useOPFS = await isOPFSAvailable();
-    console.log('[DB] OPFS available:', useOPFS);
-
-    if (useOPFS) {
-      // Use OPFS for persistent storage
-      console.log('[DB] Using OPFS storage');
-
-      // Check if OPFS VFS is available
-      if (sqlite3.oo1.OpfsDb) {
-        db = new sqlite3.oo1.OpfsDb(DB_NAME);
-      } else {
-        console.warn('[DB] OpfsDb not available, falling back to in-memory with export');
-        db = new sqlite3.oo1.DB(':memory:');
-      }
-    } else {
-      // Fallback to in-memory database
-      // In a production app, you'd want to use IndexedDB to persist the database file
-      console.log('[DB] Using in-memory database (OPFS not available)');
-      db = new sqlite3.oo1.DB(':memory:');
+  // Initialize the plugin for native platforms
+  if (platform === 'ios' || platform === 'android') {
+    try {
+      // Request permissions if needed
+      const result = await CapacitorSQLite.requestPermissions();
+      console.log('[DB] Permissions result:', result);
+    } catch (error) {
+      console.error('[DB] Error requesting permissions:', error);
     }
+  }
 
-    // Configure database for better performance and reliability
-    db.exec(`
-      PRAGMA journal_mode = WAL;
-      PRAGMA synchronous = NORMAL;
-      PRAGMA foreign_keys = ON;
-      PRAGMA cache_size = -2000;
-    `);
+  // Check connection consistency
+  const retCC = (await sqlite.checkConnectionsConsistency()).result;
+  const isConn = (await sqlite.isConnection(DB_NAME, false)).result;
 
-    console.log('[DB] Database initialized successfully');
-    return db;
-  })();
+  if (retCC && isConn) {
+    db = await sqlite.retrieveConnection(DB_NAME, false);
+  } else {
+    db = await sqlite.createConnection(
+      DB_NAME,
+      false,
+      'no-encryption',
+      1,
+      false
+    );
+  }
 
-  return initPromise;
+  await db.open();
+
+  // Configure database for better performance and reliability
+  // PRAGMAs return values, so use query() instead of execute() on Android
+  try {
+    await db.query('PRAGMA journal_mode = WAL;', []);
+    await db.query('PRAGMA synchronous = NORMAL;', []);
+    await db.query('PRAGMA foreign_keys = ON;', []);
+    await db.query('PRAGMA cache_size = -2000;', []);
+    console.log('[DB] PRAGMAs configured successfully');
+  } catch (error) {
+    // PRAGMAs are optional optimizations, log but don't fail
+    console.warn('[DB] PRAGMA configuration warning:', error);
+  }
+
+  console.log('[DB] Database initialized successfully');
 }
 
 /**
  * Get the database instance (must be initialized first)
  */
-export function getDatabase(): Database {
+function getDatabase(): SQLiteDBConnection {
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
@@ -100,55 +81,58 @@ export function getDatabase(): Database {
 
 /**
  * Execute a SQL statement with optional parameters
+ * Uses execute() for DDL (no params) and run() for DML (with params)
  */
-export function exec(sql: string, params?: SqlValue[]): void {
+export async function exec(sql: string, params?: unknown[]): Promise<void> {
   const database = getDatabase();
   if (params && params.length > 0) {
-    database.exec({ sql, bind: params });
+    // DML with parameters - use run()
+    await database.run(sql, params);
   } else {
-    database.exec(sql);
+    // DDL or multi-statement SQL - use execute()
+    await database.execute(sql);
   }
 }
 
 /**
  * Execute a query and return all results
  */
-export function query<T = Record<string, SqlValue>>(sql: string, params?: SqlValue[]): T[] {
+export async function query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T[]> {
   const database = getDatabase();
-  const results: T[] = [];
-
-  database.exec({
-    sql,
-    bind: params && params.length > 0 ? params : undefined,
-    rowMode: 'object',
-    callback: (row) => {
-      results.push(row as T);
-    }
-  });
-
-  return results;
+  const result = await database.query(sql, params ?? []);
+  return (result.values ?? []) as T[];
 }
 
 /**
  * Execute a query and return the first result
  */
-export function queryOne<T = Record<string, SqlValue>>(sql: string, params?: SqlValue[]): T | null {
-  const results = query<T>(sql, params);
+export async function queryOne<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<T | null> {
+  const results = await query<T>(sql, params);
   return results[0] ?? null;
 }
 
 /**
  * Execute multiple statements in a transaction
+ * Uses the plugin's native transaction methods for Android compatibility
  */
-export function transaction<T>(fn: () => T): T {
+export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
   const database = getDatabase();
-  database.exec('BEGIN TRANSACTION');
+
+  // Check if transaction is already active
+  const isActive = await database.isTransactionActive();
+  if (isActive.result) {
+    // Already in a transaction, just run the function
+    return await fn();
+  }
+
+  // Use plugin's native transaction methods
+  await database.beginTransaction();
   try {
-    const result = fn();
-    database.exec('COMMIT');
+    const result = await fn();
+    await database.commitTransaction();
     return result;
   } catch (error) {
-    database.exec('ROLLBACK');
+    await database.rollbackTransaction();
     throw error;
   }
 }

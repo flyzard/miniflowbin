@@ -9,8 +9,8 @@ import { generateId, now } from '../types';
 /**
  * Get all products for a distribution center
  */
-export function listProducts(distributionCenterId: string): Product[] {
-  return query<Product>(
+export async function listProducts(distributionCenterId: string): Promise<Product[]> {
+  return await query<Product>(
     'SELECT * FROM products WHERE distribution_center_id = ? AND is_active = 1 ORDER BY name',
     [distributionCenterId]
   );
@@ -19,8 +19,8 @@ export function listProducts(distributionCenterId: string): Product[] {
 /**
  * Get a product by ID
  */
-export function getProductById(id: string): Product | null {
-  return queryOne<Product>(
+export async function getProductById(id: string): Promise<Product | null> {
+  return await queryOne<Product>(
     'SELECT * FROM products WHERE id = ?',
     [id]
   );
@@ -29,9 +29,9 @@ export function getProductById(id: string): Product | null {
 /**
  * Search products by name or SKU
  */
-export function searchProducts(searchTerm: string, distributionCenterId: string, limit: number = 50): Product[] {
+export async function searchProducts(searchTerm: string, distributionCenterId: string, limit: number = 50): Promise<Product[]> {
   const term = `%${searchTerm}%`;
-  return query<Product>(
+  return await query<Product>(
     `SELECT * FROM products
      WHERE distribution_center_id = ?
        AND is_active = 1
@@ -47,8 +47,8 @@ export function searchProducts(searchTerm: string, distributionCenterId: string,
 /**
  * Get products that have available inventory
  */
-export function listProductsWithInventory(distributionCenterId: string): Product[] {
-  return query<Product>(
+export async function listProductsWithInventory(distributionCenterId: string): Promise<Product[]> {
+  return await query<Product>(
     `SELECT
        p.*,
        COUNT(DISTINCT b.position_id) as position_count,
@@ -66,8 +66,8 @@ export function listProductsWithInventory(distributionCenterId: string): Product
 /**
  * Get a product by SKU within a distribution center
  */
-export function getProductBySku(sku: string, distributionCenterId: string): Product | null {
-  return queryOne<Product>(
+export async function getProductBySku(sku: string, distributionCenterId: string): Promise<Product | null> {
+  return await queryOne<Product>(
     'SELECT * FROM products WHERE sku = ? AND distribution_center_id = ?',
     [sku, distributionCenterId]
   );
@@ -76,7 +76,7 @@ export function getProductBySku(sku: string, distributionCenterId: string): Prod
 /**
  * Create a new product
  */
-export function createProduct(data: {
+export async function createProduct(data: {
   sku: string;
   name: string | null;
   description: string | null;
@@ -85,11 +85,11 @@ export function createProduct(data: {
   size: string | null;
   unit_of_measure: string;
   distributionCenterId: string;
-}): Product {
+}): Promise<Product> {
   const id = generateId();
   const timestamp = now();
 
-  exec(
+  await exec(
     `INSERT INTO products
      (id, sku, name, description, category, color, size, unit_of_measure, distribution_center_id, is_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
@@ -108,20 +108,20 @@ export function createProduct(data: {
     ]
   );
 
-  return getProductById(id)!;
+  return (await getProductById(id))!;
 }
 
 /**
  * Update an existing product
  */
-export function updateProduct(id: string, data: {
+export async function updateProduct(id: string, data: {
   name: string | null;
   description: string | null;
   category: string | null;
   color: string | null;
   size: string | null;
-}): void {
-  exec(
+}): Promise<void> {
+  await exec(
     `UPDATE products
      SET name = ?, description = ?, category = ?, color = ?, size = ?, updated_at = ?
      WHERE id = ?`,
@@ -133,7 +133,7 @@ export function updateProduct(id: string, data: {
  * Upsert a product (create if not exists, update if exists)
  * Returns whether the product was created or updated
  */
-export function upsertProduct(
+export async function upsertProduct(
   data: {
     sku: string;
     name: string | null;
@@ -144,11 +144,11 @@ export function upsertProduct(
     unit_of_measure: string;
   },
   distributionCenterId: string
-): 'created' | 'updated' {
-  const existing = getProductBySku(data.sku, distributionCenterId);
+): Promise<'created' | 'updated'> {
+  const existing = await getProductBySku(data.sku, distributionCenterId);
 
   if (existing) {
-    updateProduct(existing.id, {
+    await updateProduct(existing.id, {
       name: data.name,
       description: data.description,
       category: data.category,
@@ -157,7 +157,7 @@ export function upsertProduct(
     });
     return 'updated';
   } else {
-    createProduct({
+    await createProduct({
       ...data,
       distributionCenterId
     });

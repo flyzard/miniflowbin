@@ -32,14 +32,14 @@ export async function initApp(): Promise<void> {
     console.log('[Init] Database initialized');
 
     // Run migrations (no seeding - database starts empty)
-    initializeSchema();
+    await initializeSchema();
     console.log('[Init] Schema initialized');
 
     // Initialize stores from saved settings
-    initAuth();
+    await initAuth();
     console.log('[Init] Auth initialized');
 
-    initDistributionCenter();
+    await initDistributionCenter();
     console.log('[Init] Distribution center initialized');
 
     initialized = true;

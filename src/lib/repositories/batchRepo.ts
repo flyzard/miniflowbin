@@ -9,8 +9,8 @@ import { generateId, now } from '../types';
 /**
  * Get a batch by ID
  */
-export function getBatchById(id: string): InventoryBatch | null {
-  return queryOne<InventoryBatch>(
+export async function getBatchById(id: string): Promise<InventoryBatch | null> {
+  return await queryOne<InventoryBatch>(
     'SELECT * FROM inventory_batches WHERE id = ?',
     [id]
   );
@@ -19,8 +19,8 @@ export function getBatchById(id: string): InventoryBatch | null {
 /**
  * Get a batch by batch number
  */
-export function getBatchByNumber(batchNumber: string): InventoryBatch | null {
-  return queryOne<InventoryBatch>(
+export async function getBatchByNumber(batchNumber: string): Promise<InventoryBatch | null> {
+  return await queryOne<InventoryBatch>(
     'SELECT * FROM inventory_batches WHERE batch_number = ?',
     [batchNumber]
   );
@@ -29,8 +29,8 @@ export function getBatchByNumber(batchNumber: string): InventoryBatch | null {
 /**
  * Get all batches for a product
  */
-export function listBatchesByProduct(productId: string): InventoryBatch[] {
-  return query<InventoryBatch>(
+export async function listBatchesByProduct(productId: string): Promise<InventoryBatch[]> {
+  return await query<InventoryBatch>(
     'SELECT * FROM inventory_batches WHERE product_id = ? AND quantity > 0 ORDER BY received_at',
     [productId]
   );
@@ -39,8 +39,8 @@ export function listBatchesByProduct(productId: string): InventoryBatch[] {
 /**
  * Get all batches at a position
  */
-export function listBatchesAtPosition(positionId: string): InventoryBatch[] {
-  return query<InventoryBatch>(
+export async function listBatchesAtPosition(positionId: string): Promise<InventoryBatch[]> {
+  return await query<InventoryBatch>(
     'SELECT * FROM inventory_batches WHERE position_id = ? AND quantity > 0 ORDER BY received_at',
     [positionId]
   );
@@ -49,8 +49,8 @@ export function listBatchesAtPosition(positionId: string): InventoryBatch[] {
 /**
  * Get batches for a product with full details (product name, position code)
  */
-export function listBatchesWithDetails(productId: string): InventoryBatch[] {
-  return query<InventoryBatch>(
+export async function listBatchesWithDetails(productId: string): Promise<InventoryBatch[]> {
+  return await query<InventoryBatch>(
     `SELECT
        b.*,
        p.name as product_name,
@@ -69,7 +69,7 @@ export function listBatchesWithDetails(productId: string): InventoryBatch[] {
 /**
  * Create a new batch
  */
-export function createBatch(data: {
+export async function createBatch(data: {
   batchNumber: string;
   productId: string;
   positionId: string;
@@ -78,11 +78,11 @@ export function createBatch(data: {
   distributionCenterId: string;
   expirationDate?: string;
   lotNumber?: string;
-}): InventoryBatch {
+}): Promise<InventoryBatch> {
   const id = generateId();
   const timestamp = now();
 
-  exec(
+  await exec(
     `INSERT INTO inventory_batches
      (id, batch_number, product_id, position_id, quantity, original_quantity, received_at, received_by, expiration_date, lot_number, distribution_center_id, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -103,14 +103,14 @@ export function createBatch(data: {
     ]
   );
 
-  return getBatchById(id)!;
+  return (await getBatchById(id))!;
 }
 
 /**
  * Update batch quantity
  */
-export function updateBatchQuantity(id: string, newQuantity: number): void {
-  exec(
+export async function updateBatchQuantity(id: string, newQuantity: number): Promise<void> {
+  await exec(
     'UPDATE inventory_batches SET quantity = ?, updated_at = ? WHERE id = ?',
     [newQuantity, now(), id]
   );
@@ -119,8 +119,8 @@ export function updateBatchQuantity(id: string, newQuantity: number): void {
 /**
  * Get total quantity of a product across all positions
  */
-export function getTotalProductQuantity(productId: string): number {
-  const result = queryOne<{ total: number }>(
+export async function getTotalProductQuantity(productId: string): Promise<number> {
+  const result = await queryOne<{ total: number }>(
     'SELECT COALESCE(SUM(quantity), 0) as total FROM inventory_batches WHERE product_id = ?',
     [productId]
   );
@@ -130,8 +130,8 @@ export function getTotalProductQuantity(productId: string): number {
 /**
  * Get available quantity at a specific position for a product
  */
-export function getQuantityAtPosition(productId: string, positionId: string): number {
-  const result = queryOne<{ total: number }>(
+export async function getQuantityAtPosition(productId: string, positionId: string): Promise<number> {
+  const result = await queryOne<{ total: number }>(
     'SELECT COALESCE(SUM(quantity), 0) as total FROM inventory_batches WHERE product_id = ? AND position_id = ?',
     [productId, positionId]
   );
@@ -141,9 +141,9 @@ export function getQuantityAtPosition(productId: string, positionId: string): nu
 /**
  * Get the count of batches created today (for batch number generation)
  */
-export function getTodayBatchCount(distributionCenterId: string): number {
+export async function getTodayBatchCount(distributionCenterId: string): Promise<number> {
   const today = new Date().toISOString().split('T')[0] ?? ''; // YYYY-MM-DD
-  const result = queryOne<{ count: number }>(
+  const result = await queryOne<{ count: number }>(
     `SELECT COUNT(*) as count FROM inventory_batches
      WHERE distribution_center_id = ?
      AND DATE(created_at) = ?`,

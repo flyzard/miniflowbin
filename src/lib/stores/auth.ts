@@ -14,10 +14,10 @@ const currentUserStore = writable<User | null>(null);
 /**
  * Initialize auth from stored settings
  */
-export function initAuth(): void {
-  const userId = getCurrentUserId();
+export async function initAuth(): Promise<void> {
+  const userId = await getCurrentUserId();
   if (userId) {
-    const user = getUserById(userId);
+    const user = await getUserById(userId);
     currentUserStore.set(user);
   }
 }
@@ -25,10 +25,10 @@ export function initAuth(): void {
 /**
  * Set the current user
  */
-export function setUser(user: User | null): void {
+export async function setUser(user: User | null): Promise<void> {
   currentUserStore.set(user);
   if (user) {
-    setCurrentUserId(user.id);
+    await setCurrentUserId(user.id);
   }
 }
 

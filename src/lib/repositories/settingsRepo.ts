@@ -10,8 +10,8 @@ import type { AppSettings, User, DistributionCenter } from '../types';
 /**
  * Get a setting value by key
  */
-export function getSetting(key: string): string | null {
-  const result = queryOne<AppSettings>(
+export async function getSetting(key: string): Promise<string | null> {
+  const result = await queryOne<AppSettings>(
     'SELECT value FROM app_settings WHERE key = ?',
     [key]
   );
@@ -21,8 +21,8 @@ export function getSetting(key: string): string | null {
 /**
  * Set a setting value
  */
-export function setSetting(key: string, value: string): void {
-  exec(
+export async function setSetting(key: string, value: string): Promise<void> {
+  await exec(
     'INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)',
     [key, value]
   );
@@ -31,36 +31,36 @@ export function setSetting(key: string, value: string): void {
 /**
  * Delete a setting
  */
-export function deleteSetting(key: string): void {
-  exec('DELETE FROM app_settings WHERE key = ?', [key]);
+export async function deleteSetting(key: string): Promise<void> {
+  await exec('DELETE FROM app_settings WHERE key = ?', [key]);
 }
 
 /**
  * Get the selected distribution center ID
  */
-export function getSelectedDcId(): string | null {
-  return getSetting('selected_dc_id');
+export async function getSelectedDcId(): Promise<string | null> {
+  return await getSetting('selected_dc_id');
 }
 
 /**
  * Set the selected distribution center ID
  */
-export function setSelectedDcId(dcId: string): void {
-  setSetting('selected_dc_id', dcId);
+export async function setSelectedDcId(dcId: string): Promise<void> {
+  await setSetting('selected_dc_id', dcId);
 }
 
 /**
  * Get the current user ID
  */
-export function getCurrentUserId(): string | null {
-  return getSetting('current_user_id');
+export async function getCurrentUserId(): Promise<string | null> {
+  return await getSetting('current_user_id');
 }
 
 /**
  * Set the current user ID
  */
-export function setCurrentUserId(userId: string): void {
-  setSetting('current_user_id', userId);
+export async function setCurrentUserId(userId: string): Promise<void> {
+  await setSetting('current_user_id', userId);
 }
 
 // ============================================================================
@@ -70,8 +70,8 @@ export function setCurrentUserId(userId: string): void {
 /**
  * Get a user by ID
  */
-export function getUserById(id: string): User | null {
-  return queryOne<User>(
+export async function getUserById(id: string): Promise<User | null> {
+  return await queryOne<User>(
     'SELECT * FROM users WHERE id = ?',
     [id]
   );
@@ -84,8 +84,8 @@ export function getUserById(id: string): User | null {
 /**
  * Get all active distribution centers
  */
-export function listActiveDistributionCenters(): DistributionCenter[] {
-  return query<DistributionCenter>(
+export async function listActiveDistributionCenters(): Promise<DistributionCenter[]> {
+  return await query<DistributionCenter>(
     'SELECT * FROM distribution_centers WHERE is_active = 1 ORDER BY name'
   );
 }
@@ -93,8 +93,8 @@ export function listActiveDistributionCenters(): DistributionCenter[] {
 /**
  * Get a distribution center by ID
  */
-export function getDistributionCenterById(id: string): DistributionCenter | null {
-  return queryOne<DistributionCenter>(
+export async function getDistributionCenterById(id: string): Promise<DistributionCenter | null> {
+  return await queryOne<DistributionCenter>(
     'SELECT * FROM distribution_centers WHERE id = ?',
     [id]
   );

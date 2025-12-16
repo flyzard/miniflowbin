@@ -222,12 +222,12 @@ function valuesEqual(a: string | null | undefined, b: string | null | undefined)
 /**
  * Generate import preview by comparing CSV with existing DB positions
  */
-export function generatePreview(
+export async function generatePreview(
   validated: ImportPosition[],
   distributionCenterId: string
-): ImportPreviewSummary {
+): Promise<ImportPreviewSummary> {
   const items: ImportPreviewItem[] = [];
-  const existingPositions = listAllPositions(distributionCenterId);
+  const existingPositions = await listAllPositions(distributionCenterId);
   const existingByCode = new Map(existingPositions.map(p => [p.code, p]));
   const csvCodes = new Set(validated.map(p => p.code));
 
@@ -274,7 +274,7 @@ export function generatePreview(
           action: 'UPDATE',
           existingId: existing.id,
           changes,
-          hasInventory: positionHasInventory(existing.id)
+          hasInventory: await positionHasInventory(existing.id)
         });
       } else {
         unchangedCount++;
@@ -288,7 +288,7 @@ export function generatePreview(
 
   for (const existing of existingPositions) {
     if (!csvCodes.has(existing.code)) {
-      const hasInv = positionHasInventory(existing.id);
+      const hasInv = await positionHasInventory(existing.id);
 
       if (hasInv) {
         orphanedWithInventory++;
@@ -330,11 +330,11 @@ export function generatePreview(
 /**
  * Execute the import based on preview and user's orphan strategy choice
  */
-export function executeImport(
+export async function executeImport(
   preview: ImportPreviewSummary,
   orphanStrategy: OrphanStrategy,
   distributionCenterId: string
-): ImportResult {
+): Promise<ImportResult> {
   let created = 0;
   let updated = 0;
   let deleted = 0;
@@ -342,12 +342,12 @@ export function executeImport(
   const errors: string[] = [];
 
   try {
-    transaction(() => {
+    await transaction(async () => {
       for (const item of preview.items) {
         try {
           switch (item.action) {
             case 'CREATE':
-              createPositionBulk({
+              await createPositionBulk({
                 ...item.position,
                 distributionCenterId
               });
@@ -356,7 +356,7 @@ export function executeImport(
 
             case 'UPDATE':
               if (item.existingId) {
-                updatePositionBulk(item.existingId, item.position);
+                await updatePositionBulk(item.existingId, item.position);
                 updated++;
               }
               break;
@@ -366,11 +366,11 @@ export function executeImport(
               if (item.existingId && !item.hasInventory) {
                 switch (orphanStrategy) {
                   case 'delete':
-                    deletePosition(item.existingId);
+                    await deletePosition(item.existingId);
                     deleted++;
                     break;
                   case 'mark_inactive':
-                    markPositionInactive(item.existingId);
+                    await markPositionInactive(item.existingId);
                     markedInactive++;
                     break;
                   case 'keep':

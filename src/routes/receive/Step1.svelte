@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { push } from 'svelte-spa-router';
   import { BackNav, StepIndicator, SearchDropdown, QuantityInput, Button, PageLayout, PositionSelector } from '../../lib/components';
   import { selectedDc } from '../../lib/stores/distributionCenter';
@@ -7,11 +8,29 @@
   import { listPositions } from '../../lib/repositories/positionRepo';
   import type { Product, StoragePosition } from '../../lib/types';
 
-  // Get products and positions based on selected DC
+  // Local state for async data
+  let products: Product[] = [];
+  let positions: StoragePosition[] = [];
+  let isLoading = true;
+
+  // Load data on mount and when DC changes
   $: dcId = $selectedDc?.id ?? '';
-  $: products = dcId ? searchProducts('', dcId, 100) : [];
-  $: positions = dcId ? listPositions(dcId) : [];
+  $: if (dcId) loadData(dcId);
   $: canProceed = canConfirmReceive($receiveFlow);
+
+  async function loadData(distributionCenterId: string) {
+    isLoading = true;
+    try {
+      [products, positions] = await Promise.all([
+        searchProducts('', distributionCenterId, 100),
+        listPositions(distributionCenterId)
+      ]);
+    } catch (error) {
+      console.error('Failed to load data:', error);
+    } finally {
+      isLoading = false;
+    }
+  }
 
   function handleProductSelect(event: CustomEvent<Product | null>) {
     receiveFlow.update(s => ({ ...s, product: event.detail }));

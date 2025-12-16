@@ -12,10 +12,17 @@
   $: qty = effectiveQuantity($releaseFlow);
 
   // Auto-resolve destination position based on product SKU
-  $: {
-    if ($releaseFlow.product && $selectedDc && !$releaseFlow.destinationPosition) {
-      const { position } = resolveDestinationPosition($releaseFlow.product, $selectedDc.id);
+  $: if ($releaseFlow.product && $selectedDc && !$releaseFlow.destinationPosition) {
+    resolveDestination($releaseFlow.product, $selectedDc.id);
+  }
+
+  async function resolveDestination(product: typeof $releaseFlow.product, dcId: string) {
+    if (!product) return;
+    try {
+      const { position } = await resolveDestinationPosition(product, dcId);
       releaseFlow.update(s => ({ ...s, destinationPosition: position }));
+    } catch (error) {
+      console.error('Failed to resolve destination:', error);
     }
   }
 
@@ -48,7 +55,7 @@
     isSubmitting = true;
 
     try {
-      const result = executeRelease({
+      const result = await executeRelease({
         batchId: sourceBatch.id,
         quantity: qty,
         destinationPositionId: destinationPosition.id,

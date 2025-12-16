@@ -9,8 +9,8 @@ import { generateId, now } from '../types';
 /**
  * Get all positions for a distribution center
  */
-export function listPositions(distributionCenterId: string): StoragePosition[] {
-  return query<StoragePosition>(
+export async function listPositions(distributionCenterId: string): Promise<StoragePosition[]> {
+  return await query<StoragePosition>(
     'SELECT * FROM storage_positions WHERE distribution_center_id = ? AND is_active = 1 ORDER BY zone, code',
     [distributionCenterId]
   );
@@ -19,8 +19,8 @@ export function listPositions(distributionCenterId: string): StoragePosition[] {
 /**
  * Get a position by ID
  */
-export function getPositionById(id: string): StoragePosition | null {
-  return queryOne<StoragePosition>(
+export async function getPositionById(id: string): Promise<StoragePosition | null> {
+  return await queryOne<StoragePosition>(
     'SELECT * FROM storage_positions WHERE id = ?',
     [id]
   );
@@ -29,9 +29,9 @@ export function getPositionById(id: string): StoragePosition | null {
 /**
  * Search positions by code or zone
  */
-export function searchPositions(searchTerm: string, distributionCenterId: string, limit: number = 50): StoragePosition[] {
+export async function searchPositions(searchTerm: string, distributionCenterId: string, limit: number = 50): Promise<StoragePosition[]> {
   const term = `%${searchTerm}%`;
-  return query<StoragePosition>(
+  return await query<StoragePosition>(
     `SELECT * FROM storage_positions
      WHERE distribution_center_id = ?
        AND is_active = 1
@@ -47,8 +47,8 @@ export function searchPositions(searchTerm: string, distributionCenterId: string
 /**
  * Get a position by its code within a distribution center
  */
-export function getPositionByCode(code: string, distributionCenterId: string): StoragePosition | null {
-  return queryOne<StoragePosition>(
+export async function getPositionByCode(code: string, distributionCenterId: string): Promise<StoragePosition | null> {
+  return await queryOne<StoragePosition>(
     'SELECT * FROM storage_positions WHERE code = ? AND distribution_center_id = ? AND is_active = 1',
     [code, distributionCenterId]
   );
@@ -57,17 +57,17 @@ export function getPositionByCode(code: string, distributionCenterId: string): S
 /**
  * Create a new storage position
  */
-export function createPosition(data: {
+export async function createPosition(data: {
   code: string;
   zone: string;
   zoneType?: string;
   description?: string;
   distributionCenterId: string;
-}): StoragePosition {
+}): Promise<StoragePosition> {
   const id = generateId();
   const timestamp = now();
 
-  exec(
+  await exec(
     `INSERT INTO storage_positions
      (id, code, zone, zone_type, description, aisle, rack, level, distribution_center_id, is_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
@@ -86,7 +86,7 @@ export function createPosition(data: {
     ]
   );
 
-  return getPositionById(id)!;
+  return (await getPositionById(id))!;
 }
 
 // ============================================================================
@@ -96,8 +96,8 @@ export function createPosition(data: {
 /**
  * Get all positions for a distribution center (including inactive)
  */
-export function listAllPositions(distributionCenterId: string): StoragePosition[] {
-  return query<StoragePosition>(
+export async function listAllPositions(distributionCenterId: string): Promise<StoragePosition[]> {
+  return await query<StoragePosition>(
     'SELECT * FROM storage_positions WHERE distribution_center_id = ? ORDER BY zone, code',
     [distributionCenterId]
   );
@@ -106,7 +106,7 @@ export function listAllPositions(distributionCenterId: string): StoragePosition[
 /**
  * Create a position with all fields (for bulk import)
  */
-export function createPositionBulk(data: {
+export async function createPositionBulk(data: {
   code: string;
   zone: string;
   aisle: string;
@@ -115,11 +115,11 @@ export function createPositionBulk(data: {
   description: string | null;
   is_active: boolean;
   distributionCenterId: string;
-}): StoragePosition {
+}): Promise<StoragePosition> {
   const id = generateId();
   const timestamp = now();
 
-  exec(
+  await exec(
     `INSERT INTO storage_positions
      (id, code, zone, zone_type, description, aisle, rack, level, distribution_center_id, is_active, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -139,21 +139,21 @@ export function createPositionBulk(data: {
     ]
   );
 
-  return getPositionById(id)!;
+  return (await getPositionById(id))!;
 }
 
 /**
  * Update an existing position (for bulk import)
  */
-export function updatePositionBulk(id: string, data: {
+export async function updatePositionBulk(id: string, data: {
   zone: string;
   aisle: string;
   rack: string;
   level: string;
   description: string | null;
   is_active: boolean;
-}): void {
-  exec(
+}): Promise<void> {
+  await exec(
     `UPDATE storage_positions
      SET zone = ?, aisle = ?, rack = ?, level = ?, description = ?, is_active = ?, updated_at = ?
      WHERE id = ?`,
@@ -164,8 +164,8 @@ export function updatePositionBulk(id: string, data: {
 /**
  * Mark a position as inactive (soft delete)
  */
-export function markPositionInactive(id: string): void {
-  exec(
+export async function markPositionInactive(id: string): Promise<void> {
+  await exec(
     'UPDATE storage_positions SET is_active = 0, updated_at = ? WHERE id = ?',
     [now(), id]
   );
@@ -174,15 +174,15 @@ export function markPositionInactive(id: string): void {
 /**
  * Delete a position (hard delete - only use for empty positions)
  */
-export function deletePosition(id: string): void {
-  exec('DELETE FROM storage_positions WHERE id = ?', [id]);
+export async function deletePosition(id: string): Promise<void> {
+  await exec('DELETE FROM storage_positions WHERE id = ?', [id]);
 }
 
 /**
  * Check if a position has inventory (batches with quantity > 0)
  */
-export function positionHasInventory(id: string): boolean {
-  const result = queryOne<{ count: number }>(
+export async function positionHasInventory(id: string): Promise<boolean> {
+  const result = await queryOne<{ count: number }>(
     'SELECT COUNT(*) as count FROM inventory_batches WHERE position_id = ? AND quantity > 0',
     [id]
   );

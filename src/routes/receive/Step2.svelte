@@ -11,9 +11,9 @@
   let isSubmitting = false;
 
   // Generate batch number on mount
-  onMount(() => {
+  onMount(async () => {
     if ($selectedDc && !$receiveFlow.batchNumber) {
-      const newBatchNumber = generateBatchNumber($selectedDc.id);
+      const newBatchNumber = await generateBatchNumber($selectedDc.id);
       receiveFlow.update(s => ({ ...s, batchNumber: newBatchNumber }));
     }
   });
@@ -53,7 +53,7 @@
     isSubmitting = true;
 
     try {
-      const result = executeReceive({
+      const result = await executeReceive({
         productId: product.id,
         positionId: position.id,
         quantity,

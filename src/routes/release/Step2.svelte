@@ -4,23 +4,39 @@
   import { releaseFlow, canSelectDestination } from '../../lib/stores/releaseFlow';
   import { listBatchesWithDetails } from '../../lib/repositories/batchRepo';
   import { getPositionById } from '../../lib/repositories/positionRepo';
-  import type { InventoryBatch } from '../../lib/types';
+  import type { InventoryBatch, StoragePosition } from '../../lib/types';
+
+  // Local state for async data
+  let batches: InventoryBatch[] = [];
+  let isLoading = true;
+  let autoSelectDone = false;
 
   $: canProceed = canSelectDestination($releaseFlow);
 
-  // Get batches for the selected product (sorted by FIFO - oldest first)
-  $: batches = $releaseFlow.product ? listBatchesWithDetails($releaseFlow.product.id) : [];
+  // Load batches when product changes
+  $: if ($releaseFlow.product) {
+    loadBatches($releaseFlow.product.id);
+  }
 
-  // Auto-select oldest batch (FIFO) when available and none selected
-  $: {
-    const oldestBatch = batches[0];
-    if (oldestBatch && !$releaseFlow.sourceBatch) {
-      handleBatchSelect(oldestBatch);
+  async function loadBatches(productId: string) {
+    isLoading = true;
+    autoSelectDone = false;
+    try {
+      batches = await listBatchesWithDetails(productId);
+      // Auto-select oldest batch (FIFO) when available and none selected
+      if (batches.length > 0 && !$releaseFlow.sourceBatch && !autoSelectDone) {
+        autoSelectDone = true;
+        await handleBatchSelect(batches[0]);
+      }
+    } catch (error) {
+      console.error('Failed to load batches:', error);
+    } finally {
+      isLoading = false;
     }
   }
 
-  function handleBatchSelect(batch: InventoryBatch) {
-    const position = getPositionById(batch.position_id);
+  async function handleBatchSelect(batch: InventoryBatch) {
+    const position = await getPositionById(batch.position_id);
     if (position) {
       releaseFlow.update(s => ({
         ...s,

@@ -16,9 +16,9 @@ interface SchemaVersion {
 /**
  * Get the current schema version from the database
  */
-function getCurrentVersion(): number {
+async function getCurrentVersion(): Promise<number> {
   try {
-    const result = queryOne<SchemaVersion>(
+    const result = await queryOne<SchemaVersion>(
       'SELECT version FROM schema_version ORDER BY version DESC LIMIT 1'
     );
     return result?.version ?? 0;
@@ -31,8 +31,8 @@ function getCurrentVersion(): number {
 /**
  * Record a migration version
  */
-function recordVersion(version: number): void {
-  exec(
+async function recordVersion(version: number): Promise<void> {
+  await exec(
     'INSERT INTO schema_version (version, applied_at) VALUES (?, ?)',
     [version, new Date().toISOString()]
   );
@@ -41,18 +41,18 @@ function recordVersion(version: number): void {
 /**
  * Run all pending migrations
  */
-export function runMigrations(): void {
-  const currentVersion = getCurrentVersion();
+export async function runMigrations(): Promise<void> {
+  const currentVersion = await getCurrentVersion();
   console.log(`[Migrations] Current schema version: ${currentVersion}`);
 
   if (currentVersion < SCHEMA_VERSION) {
     console.log(`[Migrations] Upgrading to version ${SCHEMA_VERSION}...`);
 
-    transaction(() => {
+    await transaction(async () => {
       // For fresh installs (version 0), run the full schema creation
       if (currentVersion === 0) {
-        exec(CREATE_TABLES_SQL);
-        recordVersion(SCHEMA_VERSION);
+        await exec(CREATE_TABLES_SQL);
+        await recordVersion(SCHEMA_VERSION);
       } else {
         // Run incremental migrations
         let version = currentVersion;
@@ -60,14 +60,14 @@ export function runMigrations(): void {
         // Migration v1 -> v2: Add color and size columns to products
         if (version === 1) {
           console.log('[Migrations] Running migration v1 -> v2: Add color/size to products');
-          exec('ALTER TABLE products ADD COLUMN color TEXT');
-          exec('ALTER TABLE products ADD COLUMN size TEXT');
+          await exec('ALTER TABLE products ADD COLUMN color TEXT');
+          await exec('ALTER TABLE products ADD COLUMN size TEXT');
           version = 2;
-          recordVersion(2);
+          await recordVersion(2);
         }
 
         // Future migrations would go here:
-        // if (version === 2) { ... version = 3; recordVersion(3); }
+        // if (version === 2) { ... version = 3; await recordVersion(3); }
       }
     });
 
@@ -80,9 +80,9 @@ export function runMigrations(): void {
 /**
  * Ensure default distribution center and user exist
  */
-function ensureDefaultData(): void {
+async function ensureDefaultData(): Promise<void> {
   // Check if any distribution center exists
-  const dcCount = queryOne<{ count: number }>(
+  const dcCount = await queryOne<{ count: number }>(
     'SELECT COUNT(*) as count FROM distribution_centers'
   );
 
@@ -91,14 +91,14 @@ function ensureDefaultData(): void {
     const timestamp = now();
     const dcId = generateId();
 
-    exec(
+    await exec(
       `INSERT INTO distribution_centers (id, code, name, address, timezone, is_active, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [dcId, 'DC1', 'Distribution Center', null, 'UTC', 1, timestamp, timestamp]
     );
 
     // Store selected DC in settings
-    exec(
+    await exec(
       'INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)',
       ['selected_dc_id', dcId]
     );
@@ -107,7 +107,7 @@ function ensureDefaultData(): void {
   }
 
   // Check if any user exists
-  const userCount = queryOne<{ count: number }>(
+  const userCount = await queryOne<{ count: number }>(
     'SELECT COUNT(*) as count FROM users'
   );
 
@@ -116,13 +116,13 @@ function ensureDefaultData(): void {
     const timestamp = now();
     const userId = generateId();
 
-    exec(
+    await exec(
       `INSERT INTO users (id, username, display_name, role, is_active, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [userId, 'admin', 'Administrator', 'MANAGER', 1, timestamp, timestamp]
     );
 
-    exec(
+    await exec(
       'INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)',
       ['current_user_id', userId]
     );
@@ -134,7 +134,7 @@ function ensureDefaultData(): void {
 /**
  * Initialize database schema
  */
-export function initializeSchema(): void {
-  runMigrations();
-  ensureDefaultData();
+export async function initializeSchema(): Promise<void> {
+  await runMigrations();
+  await ensureDefaultData();
 }

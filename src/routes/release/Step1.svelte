@@ -6,10 +6,25 @@
   import { listProductsWithInventory } from '../../lib/repositories/productRepo';
   import type { Product } from '../../lib/types';
 
-  // Get products with inventory based on selected DC
+  // Local state for async data
+  let productsWithInventory: Product[] = [];
+  let isLoading = true;
+
+  // Load data on mount and when DC changes
   $: dcId = $selectedDc?.id ?? '';
-  $: productsWithInventory = dcId ? listProductsWithInventory(dcId) : [];
+  $: if (dcId) loadData(dcId);
   $: canProceed = canSelectSource($releaseFlow);
+
+  async function loadData(distributionCenterId: string) {
+    isLoading = true;
+    try {
+      productsWithInventory = await listProductsWithInventory(distributionCenterId);
+    } catch (error) {
+      console.error('Failed to load products:', error);
+    } finally {
+      isLoading = false;
+    }
+  }
 
   function handleProductSelect(event: CustomEvent<Product | null>) {
     releaseFlow.update(s => ({

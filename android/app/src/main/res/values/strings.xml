@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FlowBin</string>
+    <string name="title_activity_main">FlowBin</string>
+    <string name="package_name">com.flowbin.app</string>
+    <string name="custom_url_scheme">com.flowbin.app</string>
+</resources>

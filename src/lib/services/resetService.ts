@@ -19,15 +19,15 @@ import { transaction, exec } from '../db/database';
  *
  * After reset, the database will be empty (no seeding).
  */
-export function factoryReset(): void {
-  transaction(() => {
+export async function factoryReset(): Promise<void> {
+  await transaction(async () => {
     // Delete in order of FK dependencies (children first, parents last)
-    exec('DELETE FROM transactions');
-    exec('DELETE FROM inventory_batches');
-    exec('DELETE FROM storage_positions');
-    exec('DELETE FROM products');
-    exec('DELETE FROM users');
-    exec('DELETE FROM distribution_centers');
-    exec('DELETE FROM app_settings');
+    await exec('DELETE FROM transactions');
+    await exec('DELETE FROM inventory_batches');
+    await exec('DELETE FROM storage_positions');
+    await exec('DELETE FROM products');
+    await exec('DELETE FROM users');
+    await exec('DELETE FROM distribution_centers');
+    await exec('DELETE FROM app_settings');
   });
 }

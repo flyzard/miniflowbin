@@ -18,7 +18,7 @@ import type { InventoryBatch, Transaction } from '../types';
  * Format: BATCH-YYYYMMDD-NNN
  * Example: BATCH-20251215-001
  */
-export function generateBatchNumber(distributionCenterId: string): string {
+export async function generateBatchNumber(distributionCenterId: string): Promise<string> {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -26,7 +26,7 @@ export function generateBatchNumber(distributionCenterId: string): string {
   const dateStr = `${year}${month}${day}`;
 
   // Get count of batches already created today
-  const todayCount = getTodayBatchCount(distributionCenterId);
+  const todayCount = await getTodayBatchCount(distributionCenterId);
   const nextNumber = todayCount + 1;
   const sequence = String(nextNumber).padStart(3, '0');
 
@@ -55,14 +55,14 @@ export interface ReceiveResult {
 /**
  * Validate receive input
  */
-export function validateReceive(input: ReceiveInput): {
+export async function validateReceive(input: ReceiveInput): Promise<{
   valid: boolean;
   errors: string[];
-} {
+}> {
   const errors: string[] = [];
 
   // Validate product exists
-  const product = getProductById(input.productId);
+  const product = await getProductById(input.productId);
   if (!product) {
     errors.push('Product not found');
   } else if (!product.is_active) {
@@ -70,7 +70,7 @@ export function validateReceive(input: ReceiveInput): {
   }
 
   // Validate position exists
-  const position = getPositionById(input.positionId);
+  const position = await getPositionById(input.positionId);
   if (!position) {
     errors.push('Storage position not found');
   } else if (!position.is_active) {
@@ -103,9 +103,9 @@ export function validateReceive(input: ReceiveInput): {
  *
  * Creates a new inventory batch and records the receive transaction
  */
-export function executeReceive(input: ReceiveInput): ReceiveResult {
+export async function executeReceive(input: ReceiveInput): Promise<ReceiveResult> {
   // Validate input
-  const validation = validateReceive(input);
+  const validation = await validateReceive(input);
   if (!validation.valid) {
     return {
       success: false,
@@ -115,12 +115,12 @@ export function executeReceive(input: ReceiveInput): ReceiveResult {
 
   try {
     // Generate batch number
-    const batchNumber = generateBatchNumber(input.distributionCenterId);
+    const batchNumber = await generateBatchNumber(input.distributionCenterId);
 
     // Execute in a transaction
-    const result = transaction(() => {
+    const result = await transaction(async () => {
       // Create the inventory batch
-      const batch = createBatch({
+      const batch = await createBatch({
         batchNumber,
         productId: input.productId,
         positionId: input.positionId,
@@ -132,7 +132,7 @@ export function executeReceive(input: ReceiveInput): ReceiveResult {
       });
 
       // Create the receive transaction
-      const txn = createTransaction({
+      const txn = await createTransaction({
         type: TransactionType.RECEIVE,
         productId: input.productId,
         batchId: batch.id,

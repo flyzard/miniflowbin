@@ -34,15 +34,15 @@ export interface ReleaseResult {
 /**
  * Validate release input (full batch release)
  */
-export function validateRelease(input: ReleaseInput): {
+export async function validateRelease(input: ReleaseInput): Promise<{
   valid: boolean;
   errors: string[];
   batch?: InventoryBatch;
-} {
+}> {
   const errors: string[] = [];
 
   // Validate batch exists and has quantity
-  const batch = getBatchById(input.batchId);
+  const batch = await getBatchById(input.batchId);
   if (!batch) {
     errors.push('Batch not found');
     return { valid: false, errors };
@@ -54,7 +54,7 @@ export function validateRelease(input: ReleaseInput): {
   }
 
   // Validate destination position
-  const destination = getPositionById(input.destinationPositionId);
+  const destination = await getPositionById(input.destinationPositionId);
   if (!destination) {
     errors.push('Destination position not found');
   } else if (!destination.is_active) {
@@ -78,9 +78,9 @@ export function validateRelease(input: ReleaseInput): {
  *
  * Releases the entire batch quantity and records the transaction
  */
-export function executeRelease(input: ReleaseInput): ReleaseResult {
+export async function executeRelease(input: ReleaseInput): Promise<ReleaseResult> {
   // Validate input
-  const validation = validateRelease(input);
+  const validation = await validateRelease(input);
   if (!validation.valid || !validation.batch) {
     return {
       success: false,
@@ -93,12 +93,12 @@ export function executeRelease(input: ReleaseInput): ReleaseResult {
 
   try {
     // Execute in a transaction
-    const result = transaction(() => {
+    const result = await transaction(async () => {
       // Update batch quantity to 0
-      updateBatchQuantity(batch.id, 0);
+      await updateBatchQuantity(batch.id, 0);
 
       // Create the release transaction
-      const txn = createTransaction({
+      const txn = await createTransaction({
         type: TransactionType.RELEASE,
         productId: batch.product_id,
         batchId: batch.id,
@@ -136,19 +136,19 @@ export function executeRelease(input: ReleaseInput): ReleaseResult {
  * Resolve or create destination position based on product SKU
  * The destination position code matches the product SKU
  */
-export function resolveDestinationPosition(
+export async function resolveDestinationPosition(
   product: Product,
   distributionCenterId: string
-): { position: StoragePosition; wasCreated: boolean } {
+): Promise<{ position: StoragePosition; wasCreated: boolean }> {
   // Try to find existing position with code = product SKU
-  const existing = getPositionByCode(product.sku, distributionCenterId);
+  const existing = await getPositionByCode(product.sku, distributionCenterId);
 
   if (existing) {
     return { position: existing, wasCreated: false };
   }
 
   // Auto-create position with SKU as code
-  const newPosition = createPosition({
+  const newPosition = await createPosition({
     code: product.sku,
     zone: 'Shipping',
     zoneType: 'Shipping',
