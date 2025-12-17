@@ -88,3 +88,50 @@ export async function createPosition(data: {
 
   return (await getPositionById(id))!;
 }
+
+/**
+ * Clear all positions for a distribution center
+ */
+export async function clearPositionsForDc(distributionCenterId: string): Promise<void> {
+  await exec(
+    'DELETE FROM storage_positions WHERE distribution_center_id = ?',
+    [distributionCenterId]
+  );
+}
+
+/**
+ * Insert multiple positions (batch insert)
+ */
+export async function insertPositions(positions: Array<{
+  id: string;
+  code: string;
+  zone: string;
+  zone_type?: string;
+  description?: string;
+  aisle?: string;
+  rack?: string;
+  level?: string;
+  distribution_center_id: string;
+}>): Promise<void> {
+  const timestamp = now();
+
+  for (const position of positions) {
+    await exec(
+      `INSERT INTO storage_positions (id, code, zone, zone_type, description, aisle, rack, level, distribution_center_id, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+      [
+        position.id,
+        position.code,
+        position.zone,
+        position.zone_type ?? null,
+        position.description ?? null,
+        position.aisle ?? null,
+        position.rack ?? null,
+        position.level ?? null,
+        position.distribution_center_id,
+        timestamp,
+        timestamp
+      ]
+    );
+  }
+}

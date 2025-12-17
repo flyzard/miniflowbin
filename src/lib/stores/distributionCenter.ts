@@ -36,6 +36,18 @@ export async function initDistributionCenter(): Promise<void> {
 }
 
 /**
+ * Refresh distribution center from database
+ * Call after data sync to update the store with newly synced DC
+ */
+export async function refreshDistributionCenter(): Promise<void> {
+  const dcId = await getSelectedDcId();
+  if (dcId) {
+    const dc = await getDistributionCenterById(dcId);
+    selectedDcStore.set(dc);
+  }
+}
+
+/**
  * Subscribe to selected distribution center
  */
 export const selectedDc = {

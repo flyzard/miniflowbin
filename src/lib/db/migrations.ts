@@ -85,10 +85,22 @@ export async function runMigrations(): Promise<void> {
     // For fresh installs (version 0), run the full schema creation
     if (currentVersion === 0) {
       // Split CREATE_TABLES_SQL into individual statements for Android compatibility
-      const statements = CREATE_TABLES_SQL
+      // Remove SQL comments first, then split by semicolon
+      const sqlWithoutComments = CREATE_TABLES_SQL
+        .split('\n')
+        .map(line => {
+          // Remove inline comments (-- comment) but keep the line if it has SQL before the comment
+          const commentIndex = line.indexOf('--');
+          if (commentIndex === -1) return line;
+          // Keep everything before the comment
+          return line.substring(0, commentIndex);
+        })
+        .join('\n');
+
+      const statements = sqlWithoutComments
         .split(';')
         .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith('--'));
+        .filter(s => s.length > 0);
 
       for (const statement of statements) {
         await exec(statement);

@@ -126,6 +126,51 @@ export interface ApiError {
 }
 
 // ============================================================================
+// Data Sync Types (for /api/sync endpoint)
+// ============================================================================
+
+export interface SyncDistributionCenter {
+  id: number;
+  code: string;
+  name: string;
+  address?: string;
+  timezone: string;
+}
+
+export interface SyncProduct {
+  id: number;
+  sku: string;
+  name: string;
+  description?: string;
+  category?: string;
+  color?: string;
+  size?: string;
+  unit_of_measure: string;
+}
+
+export interface SyncStoragePosition {
+  id: number;
+  code: string;
+  zone: string;
+  zone_type?: string;
+  description?: string;
+  aisle?: string;
+  rack?: string;
+  level?: string;
+}
+
+export interface SyncResponse {
+  success: boolean;
+  distribution_center: SyncDistributionCenter;
+  products: SyncProduct[];
+  storage_positions: SyncStoragePosition[];
+}
+
+export type DataSyncResult =
+  | { success: true; productCount: number; positionCount: number }
+  | { success: false; error: string };
+
+// ============================================================================
 // Service Result Types
 // ============================================================================
 
@@ -159,6 +204,10 @@ export interface AuthStoreState {
   syncError: string | null;
   sessionId: number | null;
   lastActivityAt: Date | null;
+  // Data sync status
+  isDataSyncing: boolean;
+  dataSyncError: string | null;
+  lastDataSyncAt: Date | null;
 }
 
 // ============================================================================

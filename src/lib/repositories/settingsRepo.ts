@@ -6,6 +6,7 @@
 
 import { exec, query, queryOne } from '../db/database';
 import type { AppSettings, DistributionCenter } from '../types';
+import { now } from '../types';
 
 /**
  * Get a setting value by key
@@ -62,5 +63,29 @@ export async function getDistributionCenterById(id: string): Promise<Distributio
   return await queryOne<DistributionCenter>(
     'SELECT * FROM distribution_centers WHERE id = ?',
     [id]
+  );
+}
+
+/**
+ * Upsert a distribution center (insert or update by ID)
+ */
+export async function upsertDistributionCenter(dc: {
+  id: string;
+  code: string;
+  name: string;
+  address?: string;
+  timezone: string;
+}): Promise<void> {
+  const timestamp = now();
+  await exec(
+    `INSERT INTO distribution_centers (id, code, name, address, timezone, is_active, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       code = excluded.code,
+       name = excluded.name,
+       address = excluded.address,
+       timezone = excluded.timezone,
+       updated_at = excluded.updated_at`,
+    [dc.id, dc.code, dc.name, dc.address ?? null, dc.timezone, timestamp, timestamp]
   );
 }

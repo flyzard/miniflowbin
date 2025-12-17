@@ -25,6 +25,10 @@ const initialState: AuthStoreState = {
   syncError: null,
   sessionId: null,
   lastActivityAt: null,
+  // Data sync status
+  isDataSyncing: false,
+  dataSyncError: null,
+  lastDataSyncAt: null,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -172,6 +176,26 @@ function createAuthStore() {
     },
 
     // ─────────────────────────────────────────────────────────
+    // Data Sync Status
+    // ─────────────────────────────────────────────────────────
+
+    setDataSyncing: (isDataSyncing: boolean) => {
+      update(state => ({ ...state, isDataSyncing }));
+    },
+
+    setDataSyncError: (error: string | null) => {
+      update(state => ({ ...state, dataSyncError: error }));
+    },
+
+    setLastDataSync: (date: Date) => {
+      update(state => ({
+        ...state,
+        lastDataSyncAt: date,
+        dataSyncError: null
+      }));
+    },
+
+    // ─────────────────────────────────────────────────────────
     // Session Management
     // ─────────────────────────────────────────────────────────
 
@@ -308,4 +332,20 @@ export const isOnline = derived(
 export const needsLogin = derived(
   authStore,
   $auth => $auth.status === 'login_required'
+);
+
+/**
+ * Is data syncing in progress
+ */
+export const isDataSyncing = derived(
+  authStore,
+  $auth => $auth.isDataSyncing
+);
+
+/**
+ * Data sync error message (if any)
+ */
+export const dataSyncError = derived(
+  authStore,
+  $auth => $auth.dataSyncError
 );

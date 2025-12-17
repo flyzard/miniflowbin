@@ -4,11 +4,14 @@
  * Exports all auth functionality and handles initialization.
  */
 
+import { get } from 'svelte/store';
 import { authStore } from './authStore';
 import * as authRepo from './authRepository';
 import * as deviceService from './deviceService';
 import * as crypto from './cryptoService';
 import { startBackgroundSync, stopBackgroundSync, setSyncCallbacks } from './syncService';
+import { fetchAndSyncData } from '../services/dataSyncService';
+import { refreshDistributionCenter } from '../stores/distributionCenter';
 
 // Re-export everything
 export * from './types';
@@ -126,9 +129,56 @@ export async function completeLogin(userId: string, sessionId: number): Promise<
     authStore.setUser(user);
     authStore.setSessionId(sessionId);
 
-    // Start background sync now that we're authenticated
+    // Start background sync for auth validation
     startBackgroundSync();
+
+    // Sync warehouse data if online
+    if (navigator.onLine) {
+      await performDataSync();
+    }
   }
+}
+
+/**
+ * Perform data sync and update store status
+ */
+async function performDataSync(): Promise<void> {
+  authStore.setDataSyncing(true);
+
+  const result = await fetchAndSyncData();
+
+  authStore.setDataSyncing(false);
+
+  if (result.success) {
+    // Refresh the distribution center store with the newly synced DC
+    await refreshDistributionCenter();
+    authStore.setLastDataSync(new Date());
+    authStore.setDataSyncError(null);
+    console.log('[Auth] Data sync complete:', result.productCount, 'products,', result.positionCount, 'positions');
+  } else {
+    authStore.setDataSyncError(result.error);
+    console.warn('[Auth] Data sync failed:', result.error);
+  }
+}
+
+/**
+ * Sync data on app startup if authenticated and online
+ * Called after initDeviceAuth when user is already authenticated
+ */
+export async function syncOnStartup(): Promise<void> {
+  const state = get(authStore);
+
+  if (state.status !== 'authenticated') {
+    return;
+  }
+
+  if (!navigator.onLine) {
+    console.log('[Auth] Offline, skipping startup sync');
+    return;
+  }
+
+  console.log('[Auth] Syncing data on startup...');
+  await performDataSync();
 }
 
 /**

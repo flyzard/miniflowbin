@@ -81,9 +81,22 @@
 
     loading = true;
 
-    // First, complete the device activation (encrypt and save tokens)
+    // First, set up the PIN (this derives and stores the encryption key)
+    const result = await setupPin(userId, pin);
+
+    if (!result.success) {
+      error = result.error || 'Failed to save PIN';
+      loading = false;
+      step = 'enter';
+      pin = '';
+      confirmPin = '';
+      setTimeout(() => pinInputRef?.clear(), 100);
+      return;
+    }
+
+    // Now complete the device activation (encrypt tokens with the key from setupPin)
     if (hasPendingActivation()) {
-      const activationComplete = await completeActivation(pin);
+      const activationComplete = await completeActivation();
       if (!activationComplete) {
         error = 'Failed to complete activation';
         loading = false;
@@ -95,18 +108,7 @@
       }
     }
 
-    // Now set up the PIN (this also derives the encryption key)
-    const result = await setupPin(userId, pin);
     loading = false;
-
-    if (!result.success) {
-      error = result.error || 'Failed to save PIN';
-      step = 'enter';
-      pin = '';
-      confirmPin = '';
-      setTimeout(() => pinInputRef?.clear(), 100);
-      return;
-    }
 
     if (biometricAvailable) {
       step = 'biometric';

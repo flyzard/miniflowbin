@@ -2,8 +2,9 @@
  * Product Repository
  */
 
-import { query, queryOne } from '../db/database';
+import { exec, query, queryOne } from '../db/database';
 import type { Product } from '../types';
+import { now } from '../types';
 
 /**
  * Get a product by ID
@@ -50,4 +51,51 @@ export async function listProductsWithInventory(distributionCenterId: string): P
      ORDER BY p.name`,
     [distributionCenterId]
   );
+}
+
+/**
+ * Clear all products for a distribution center
+ */
+export async function clearProductsForDc(distributionCenterId: string): Promise<void> {
+  await exec(
+    'DELETE FROM products WHERE distribution_center_id = ?',
+    [distributionCenterId]
+  );
+}
+
+/**
+ * Insert multiple products (batch insert)
+ */
+export async function insertProducts(products: Array<{
+  id: string;
+  sku: string;
+  name: string;
+  description?: string;
+  category?: string;
+  color?: string;
+  size?: string;
+  unit_of_measure: string;
+  distribution_center_id: string;
+}>): Promise<void> {
+  const timestamp = now();
+
+  for (const product of products) {
+    await exec(
+      `INSERT INTO products (id, sku, name, description, category, color, size, unit_of_measure, distribution_center_id, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+      [
+        product.id,
+        product.sku,
+        product.name,
+        product.description ?? null,
+        product.category ?? null,
+        product.color ?? null,
+        product.size ?? null,
+        product.unit_of_measure,
+        product.distribution_center_id,
+        timestamp,
+        timestamp
+      ]
+    );
+  }
 }

@@ -11,7 +11,7 @@
   } from '../../lib/auth/biometricService';
   import { getPrimaryAuthUser } from '../../lib/auth/authRepository';
   import { completeLogin } from '../../lib/auth';
-  import { authStore } from '../../lib/auth/authStore';
+  import { authStore, isDataSyncing, dataSyncError } from '../../lib/auth/authStore';
   import type { AuthUser } from '../../lib/auth/types';
 
   let user: AuthUser | null = null;
@@ -21,6 +21,7 @@
   let biometricAvailable = false;
   let biometricEnabled = false;
   let loading = false;
+  let loggingIn = false;
   let pinInputRef: PinInput;
 
   onMount(async () => {
@@ -51,7 +52,7 @@
   });
 
   async function handlePinComplete(event: CustomEvent<string>) {
-    if (!user || loading) return;
+    if (!user || loading || loggingIn) return;
 
     const pin = event.detail;
     error = '';
@@ -59,12 +60,14 @@
 
     const result = await verifyPin(user.id, pin);
 
-    loading = false;
-
     if (result.success) {
+      loggingIn = true;
       await completeLogin(user.id, result.sessionId);
+      loading = false;
+      loggingIn = false;
       push('/');
     } else {
+      loading = false;
       error = result.error;
       attemptsRemaining = result.attemptsRemaining;
       lockedUntil = result.lockedUntil;
@@ -73,15 +76,19 @@
   }
 
   async function attemptBiometric() {
-    if (!user || loading) return;
+    if (!user || loading || loggingIn) return;
 
     loading = true;
     const result = await authenticateWithBiometric(user.id);
-    loading = false;
 
     if (result.success) {
+      loggingIn = true;
       await completeLogin(user.id, result.sessionId);
+      loading = false;
+      loggingIn = false;
       push('/');
+    } else {
+      loading = false;
     }
     // Silently fail for biometric - user can use PIN
   }
@@ -102,7 +109,18 @@
 </script>
 
 <div class="login-page safe-area-top safe-area-bottom">
-  {#if user}
+  {#if loggingIn}
+    <div class="sync-overlay">
+      <div class="spinner"></div>
+      <p class="sync-status">
+        {#if $isDataSyncing}
+          Syncing warehouse data...
+        {:else}
+          Signing in...
+        {/if}
+      </p>
+    </div>
+  {:else if user}
     <div class="user-info">
       <div class="avatar">
         {user.display_name.charAt(0).toUpperCase()}
@@ -282,5 +300,19 @@
 
   @keyframes spin {
     to { transform: rotate(360deg); }
+  }
+
+  .sync-overlay {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-lg);
+  }
+
+  .sync-status {
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-secondary);
   }
 </style>

@@ -170,32 +170,24 @@ export function getPendingActivation() {
 }
 
 /**
- * Complete activation by encrypting and saving tokens (called after PIN is set)
- * @param pin The PIN that was just set up
+ * Complete activation by encrypting and saving tokens
+ * IMPORTANT: setupPin() must be called BEFORE this function to establish the encryption key
  */
-export async function completeActivation(pin: string): Promise<boolean> {
+export async function completeActivation(): Promise<boolean> {
   if (!pendingActivation) {
     console.error('[DeviceService] No pending activation to complete');
     return false;
   }
 
+  if (!crypto.hasEncryptionKey()) {
+    console.error('[DeviceService] No encryption key available. Call setupPin() first.');
+    return false;
+  }
+
   try {
-    // Generate salt and derive key from PIN
-    const salt = crypto.generateSalt();
-    const encryptionKey = await crypto.deriveKeyFromPin(pin, salt);
-
-    // Set the key in memory
-    crypto.setEncryptionKey(encryptionKey);
-
-    // Encrypt tokens
-    const deviceTokenEncrypted = await crypto.encryptWithKey(
-      pendingActivation.deviceToken,
-      encryptionKey
-    );
-    const refreshTokenEncrypted = await crypto.encryptWithKey(
-      pendingActivation.refreshToken,
-      encryptionKey
-    );
+    // Encrypt tokens using the key already in memory (set by setupPin)
+    const deviceTokenEncrypted = await crypto.encrypt(pendingActivation.deviceToken);
+    const refreshTokenEncrypted = await crypto.encrypt(pendingActivation.refreshToken);
 
     // Save encrypted credentials to database
     await authRepo.saveDeviceCredentials({
@@ -378,7 +370,8 @@ export async function getDecryptedDeviceToken(): Promise<string | null> {
     if (!credentials) return null;
 
     return await crypto.decrypt(credentials.device_token_encrypted);
-  } catch {
+  } catch (error) {
+    console.error('[DeviceService] Failed to get device token:', error);
     return null;
   }
 }
