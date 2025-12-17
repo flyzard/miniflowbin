@@ -139,14 +139,19 @@
               class:selected={value === item}
               on:click={() => select(item)}
             >
-              <span class="item-primary">
-                {@html highlightMatch(displayFn(item), searchQuery)}
-              </span>
-              {#if secondaryFn}
-                <span class="item-secondary">
-                  {@html highlightMatch(secondaryFn(item), searchQuery)}
+              <div class="item-content">
+                <span class="item-primary">
+                  {@html highlightMatch(displayFn(item), searchQuery)}
                 </span>
-              {/if}
+                {#if secondaryFn}
+                  {@const secondary = secondaryFn(item)}
+                  {#if secondary}
+                    <span class="item-secondary">
+                      {@html highlightMatch(secondary, searchQuery)}
+                    </span>
+                  {/if}
+                {/if}
+              </div>
               {#if value === item}
                 <span class="check">
                   <Icon name="check" size="sm" />
@@ -289,15 +294,28 @@
     background: var(--color-bg-input);
   }
 
-  .item-primary {
+  .item-content {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs, 2px);
+    min-width: 0;
+  }
+
+  .item-primary {
     font-size: var(--font-size-body);
     color: var(--color-text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .item-secondary {
     font-size: var(--font-size-secondary);
     color: var(--color-text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .check {
