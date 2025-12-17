@@ -14,6 +14,8 @@ import { getPositionById, getPositionByCode, createPosition } from '../repositor
 import { TransactionType } from '../types';
 import type { InventoryBatch, Transaction, Product, StoragePosition } from '../types';
 import { formatError, logError } from '../utils/error';
+import { tryImmediateUpload } from './dataSyncService';
+import { authStore } from '../auth/authStore';
 
 export interface ReleaseInput {
   batchId: string;
@@ -116,6 +118,16 @@ export async function executeRelease(input: ReleaseInput): Promise<ReleaseResult
         releasedQuantity: releaseQty,
         remainingQuantity: 0
       };
+    });
+
+    // Increment pending transaction count
+    authStore.incrementPendingTransactionCount();
+
+    // Try immediate upload (fire-and-forget, non-blocking)
+    tryImmediateUpload(result.txn.id).then(uploaded => {
+      if (uploaded) {
+        authStore.decrementPendingTransactionCount();
+      }
     });
 
     return {

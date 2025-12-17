@@ -54,19 +54,21 @@ export async function listProductsWithInventory(distributionCenterId: string): P
 }
 
 /**
- * Clear all products for a distribution center
+ * Mark all products as inactive for a distribution center
+ * (Soft delete - preserves FK relationships with transactions)
  */
-export async function clearProductsForDc(distributionCenterId: string): Promise<void> {
+export async function deactivateProductsForDc(distributionCenterId: string): Promise<void> {
   await exec(
-    'DELETE FROM products WHERE distribution_center_id = ?',
-    [distributionCenterId]
+    'UPDATE products SET is_active = 0, updated_at = ? WHERE distribution_center_id = ?',
+    [now(), distributionCenterId]
   );
 }
 
 /**
- * Insert multiple products (batch insert)
+ * Upsert multiple products (insert or update)
+ * Products from server are marked active; missing ones stay inactive
  */
-export async function insertProducts(products: Array<{
+export async function upsertProducts(products: Array<{
   id: string;
   sku: string;
   name: string;
@@ -82,7 +84,17 @@ export async function insertProducts(products: Array<{
   for (const product of products) {
     await exec(
       `INSERT INTO products (id, sku, name, description, category, color, size, unit_of_measure, distribution_center_id, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         sku = excluded.sku,
+         name = excluded.name,
+         description = excluded.description,
+         category = excluded.category,
+         color = excluded.color,
+         size = excluded.size,
+         unit_of_measure = excluded.unit_of_measure,
+         is_active = 1,
+         updated_at = excluded.updated_at`,
       [
         product.id,
         product.sku,

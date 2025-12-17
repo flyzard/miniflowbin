@@ -1,6 +1,43 @@
 <script lang="ts">
   import { selectedDc } from '../stores/distributionCenter';
-  import { authStore, isAuthenticated } from '../auth/authStore';
+  import {
+    authStore,
+    isAuthenticated,
+    hasPendingTransactions,
+    pendingTransactionCount,
+    isUploadingSyncing
+  } from '../auth/authStore';
+  import { uploadPendingTransactions } from '../services/dataSyncService';
+  import * as transactionRepo from '../repositories/transactionRepo';
+  import * as settingsRepo from '../repositories/settingsRepo';
+
+  let syncing = false;
+
+  async function handleSync() {
+    if (syncing || $isUploadingSyncing) return;
+
+    syncing = true;
+    authStore.setUploadSyncing(true);
+
+    try {
+      const dcId = await settingsRepo.getSelectedDcId();
+      if (dcId) {
+        const result = await uploadPendingTransactions(dcId);
+        if (result.success) {
+          authStore.setLastUploadSync(new Date());
+          authStore.setUploadSyncError(null);
+          // Refresh pending count
+          const count = await transactionRepo.getPendingTransactionCount(dcId);
+          authStore.setPendingTransactionCount(count);
+        } else {
+          authStore.setUploadSyncError(result.error);
+        }
+      }
+    } finally {
+      syncing = false;
+      authStore.setUploadSyncing(false);
+    }
+  }
 
   function handleLogout() {
     authStore.logout();
@@ -17,6 +54,28 @@
       <span class="dc-name">No DC Selected</span>
     {/if}
     {#if $isAuthenticated}
+      <!-- Sync Up Button (only shown when pending transactions exist) -->
+      {#if $hasPendingTransactions}
+        <button
+          class="sync-btn"
+          on:click={handleSync}
+          disabled={syncing || $isUploadingSyncing}
+          aria-label="Sync pending transactions"
+        >
+          {#if syncing || $isUploadingSyncing}
+            <div class="sync-spinner"></div>
+          {:else}
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M4 4v5h5"/>
+              <path d="M20 20v-5h-5"/>
+              <path d="M20.5 9A9 9 0 0 0 5.6 5.6L4 4"/>
+              <path d="M3.5 15a9 9 0 0 0 14.9 3.4L20 20"/>
+            </svg>
+            <span class="badge">{$pendingTransactionCount}</span>
+          {/if}
+        </button>
+      {/if}
+
       <button class="logout-btn" on:click={handleLogout} aria-label="Logout">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
@@ -62,6 +121,68 @@
     background: var(--color-bg-input);
     padding: var(--space-xs) var(--space-sm);
     border-radius: var(--radius-button);
+  }
+
+  .sync-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    margin-left: var(--space-sm);
+    background: var(--color-accent-primary);
+    border: none;
+    border-radius: var(--radius-button);
+    color: var(--color-bg-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .sync-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .sync-btn:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  .sync-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--color-accent-error);
+    border-radius: 9px;
+    font-size: 11px;
+    font-weight: var(--font-weight-bold);
+    line-height: 18px;
+    text-align: center;
+    color: white;
+  }
+
+  .sync-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 0, 0, 0.2);
+    border-top-color: var(--color-bg-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   .logout-btn {

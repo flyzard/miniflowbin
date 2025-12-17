@@ -10,8 +10,10 @@ import * as authRepo from './authRepository';
 import * as deviceService from './deviceService';
 import * as crypto from './cryptoService';
 import { startBackgroundSync, stopBackgroundSync, setSyncCallbacks } from './syncService';
-import { fetchAndSyncData } from '../services/dataSyncService';
+import { fetchAndSyncData, uploadPendingTransactions } from '../services/dataSyncService';
 import { refreshDistributionCenter } from '../stores/distributionCenter';
+import * as transactionRepo from '../repositories/transactionRepo';
+import * as settingsRepo from '../repositories/settingsRepo';
 
 // Re-export everything
 export * from './types';
@@ -129,6 +131,9 @@ export async function completeLogin(userId: string, sessionId: number): Promise<
     authStore.setUser(user);
     authStore.setSessionId(sessionId);
 
+    // Initialize pending transaction count
+    await initializePendingCount();
+
     // Start background sync for auth validation
     startBackgroundSync();
 
@@ -140,11 +145,48 @@ export async function completeLogin(userId: string, sessionId: number): Promise<
 }
 
 /**
+ * Initialize pending transaction count on login
+ */
+async function initializePendingCount(): Promise<void> {
+  const dcId = await settingsRepo.getSelectedDcId();
+  if (dcId) {
+    const count = await transactionRepo.getPendingTransactionCount(dcId);
+    authStore.setPendingTransactionCount(count);
+    console.log(`[Auth] Initialized pending transaction count: ${count}`);
+  }
+}
+
+/**
  * Perform data sync and update store status
+ * Step 1: Upload pending transactions
+ * Step 2: Download fresh data (products, positions, inventory)
  */
 async function performDataSync(): Promise<void> {
   authStore.setDataSyncing(true);
 
+  // Get current DC ID
+  const dcId = await settingsRepo.getSelectedDcId();
+
+  // Step 1: Upload pending transactions first
+  if (dcId) {
+    authStore.setUploadSyncing(true);
+    const uploadResult = await uploadPendingTransactions(dcId);
+    authStore.setUploadSyncing(false);
+
+    if (uploadResult.success) {
+      authStore.setLastUploadSync(new Date());
+      // Refresh pending count after upload
+      const pendingCount = await transactionRepo.getPendingTransactionCount(dcId);
+      authStore.setPendingTransactionCount(pendingCount);
+      console.log('[Auth] Upload sync complete:', uploadResult.syncedCount, 'synced,', uploadResult.rejectedCount, 'rejected');
+    } else {
+      authStore.setUploadSyncError(uploadResult.error);
+      console.warn('[Auth] Upload sync failed:', uploadResult.error);
+      // Continue with download even if upload fails
+    }
+  }
+
+  // Step 2: Download fresh data
   const result = await fetchAndSyncData();
 
   authStore.setDataSyncing(false);

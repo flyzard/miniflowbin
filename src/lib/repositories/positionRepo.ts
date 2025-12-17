@@ -90,19 +90,21 @@ export async function createPosition(data: {
 }
 
 /**
- * Clear all positions for a distribution center
+ * Mark all positions as inactive for a distribution center
+ * (Soft delete - preserves FK relationships with batches/transactions)
  */
-export async function clearPositionsForDc(distributionCenterId: string): Promise<void> {
+export async function deactivatePositionsForDc(distributionCenterId: string): Promise<void> {
   await exec(
-    'DELETE FROM storage_positions WHERE distribution_center_id = ?',
-    [distributionCenterId]
+    'UPDATE storage_positions SET is_active = 0, updated_at = ? WHERE distribution_center_id = ?',
+    [now(), distributionCenterId]
   );
 }
 
 /**
- * Insert multiple positions (batch insert)
+ * Upsert multiple positions (insert or update)
+ * Positions from server are marked active; missing ones stay inactive
  */
-export async function insertPositions(positions: Array<{
+export async function upsertPositions(positions: Array<{
   id: string;
   code: string;
   zone: string;
@@ -118,7 +120,17 @@ export async function insertPositions(positions: Array<{
   for (const position of positions) {
     await exec(
       `INSERT INTO storage_positions (id, code, zone, zone_type, description, aisle, rack, level, distribution_center_id, is_active, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         code = excluded.code,
+         zone = excluded.zone,
+         zone_type = excluded.zone_type,
+         description = excluded.description,
+         aisle = excluded.aisle,
+         rack = excluded.rack,
+         level = excluded.level,
+         is_active = 1,
+         updated_at = excluded.updated_at`,
       [
         position.id,
         position.code,

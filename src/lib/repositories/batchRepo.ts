@@ -31,7 +31,7 @@ export async function listBatchesWithDetails(productId: string): Promise<Invento
      FROM inventory_batches b
      INNER JOIN products p ON p.id = b.product_id
      INNER JOIN storage_positions sp ON sp.id = b.position_id
-     WHERE b.product_id = ? AND b.quantity > 0
+     WHERE b.product_id = ? AND b.quantity > 0 AND b.is_active = 1
      ORDER BY b.received_at ASC`,
     [productId]
   );
@@ -99,4 +99,95 @@ export async function getTodayBatchCount(distributionCenterId: string): Promise<
     [distributionCenterId, today]
   );
   return result?.count ?? 0;
+}
+
+// ============================================================================
+// Sync Functions
+// ============================================================================
+
+/**
+ * Get batch by batch_number (for sync correlation)
+ */
+export async function getBatchByNumber(batchNumber: string): Promise<InventoryBatch | null> {
+  return await queryOne<InventoryBatch>(
+    'SELECT * FROM inventory_batches WHERE batch_number = ?',
+    [batchNumber]
+  );
+}
+
+/**
+ * Mark all batches as inactive for a distribution center
+ * (Soft delete - preserves FK relationships with transactions)
+ */
+export async function deactivateBatchesForDc(distributionCenterId: string): Promise<void> {
+  await exec(
+    'UPDATE inventory_batches SET is_active = 0, updated_at = ? WHERE distribution_center_id = ?',
+    [now(), distributionCenterId]
+  );
+}
+
+/**
+ * Count batches for a distribution center
+ */
+export async function countBatchesForDc(distributionCenterId: string): Promise<number> {
+  const result = await queryOne<{ count: number }>(
+    'SELECT COUNT(*) as count FROM inventory_batches WHERE distribution_center_id = ?',
+    [distributionCenterId]
+  );
+  return result?.count ?? 0;
+}
+
+/**
+ * Upsert multiple batches (for sync down)
+ * Batches from server are marked active; missing ones stay inactive
+ */
+export async function upsertBatches(batches: Array<{
+  id: string;
+  batchNumber: string;
+  productId: string;
+  positionId: string;
+  quantity: number;
+  originalQuantity: number;
+  receivedAt: string;
+  receivedBy: string;
+  distributionCenterId: string;
+  expirationDate?: string;
+  lotNumber?: string;
+}>): Promise<void> {
+  const timestamp = now();
+
+  for (const batch of batches) {
+    await exec(
+      `INSERT INTO inventory_batches
+       (id, batch_number, product_id, position_id, quantity, original_quantity, received_at, received_by, expiration_date, lot_number, distribution_center_id, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET
+         batch_number = excluded.batch_number,
+         product_id = excluded.product_id,
+         position_id = excluded.position_id,
+         quantity = excluded.quantity,
+         original_quantity = excluded.original_quantity,
+         received_at = excluded.received_at,
+         received_by = excluded.received_by,
+         expiration_date = excluded.expiration_date,
+         lot_number = excluded.lot_number,
+         is_active = 1,
+         updated_at = excluded.updated_at`,
+      [
+        batch.id,
+        batch.batchNumber,
+        batch.productId,
+        batch.positionId,
+        batch.quantity,
+        batch.originalQuantity,
+        batch.receivedAt,
+        batch.receivedBy,
+        batch.expirationDate ?? null,
+        batch.lotNumber ?? null,
+        batch.distributionCenterId,
+        timestamp,
+        timestamp
+      ]
+    );
+  }
 }

@@ -13,6 +13,8 @@ export enum TransactionType {
   ADJUST = 'ADJUST'
 }
 
+export type SyncStatus = 'pending' | 'synced' | 'rejected';
+
 // ============================================================================
 // Core Entities
 // ============================================================================
@@ -98,6 +100,10 @@ export interface Transaction {
   distribution_center_id: string;
   notes: string | null;
   created_at: string;
+  // Sync tracking
+  sync_status: SyncStatus;
+  synced_at: string | null;
+  sync_error: string | null;
 }
 
 export interface User {

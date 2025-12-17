@@ -12,6 +12,6 @@ bun run cap:open
 
 New Scripts Available
 
-bun run android:build   # Build web + sync to Android
-bun run cap:sync        # Sync web assets to Android
-bun run cap:open        # Open in Android Studio
+bun run android:build
+bun run cap:sync
+bunx cap run android

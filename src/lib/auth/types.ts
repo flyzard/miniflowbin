@@ -159,15 +159,68 @@ export interface SyncStoragePosition {
   level?: string;
 }
 
+export interface SyncInventoryBatch {
+  id: number;
+  batch_number: string;
+  product_id: number;
+  position_id: number;
+  quantity: number;
+  original_quantity: number;
+  received_at: string;
+  received_by: number;
+  expiration_date?: string;
+  lot_number?: string;
+}
+
 export interface SyncResponse {
   success: boolean;
   distribution_center: SyncDistributionCenter;
   products: SyncProduct[];
   storage_positions: SyncStoragePosition[];
+  inventory_batches?: SyncInventoryBatch[];
 }
 
 export type DataSyncResult =
-  | { success: true; productCount: number; positionCount: number }
+  | { success: true; productCount: number; positionCount: number; batchCount?: number }
+  | { success: false; error: string };
+
+// ============================================================================
+// Transaction Sync Types (bidirectional sync)
+// ============================================================================
+
+/** Transaction payload for upload to server */
+export interface TransactionUpload {
+  local_id: string;
+  type: 'RECEIVE' | 'RELEASE';
+  batch_number: string;
+  product_id: number;
+  from_position_id?: number;
+  to_position_id?: number;
+  quantity: number;
+  timestamp: string;
+  user_id: number;
+  distribution_center_id: number;
+  notes?: string;
+  lot_number?: string;
+  expiration_date?: string;
+}
+
+/** Response from POST /api/sync/transactions */
+export interface TransactionSyncResponse {
+  success: boolean;
+  synced_count: number;
+  rejected_transactions: RejectedTransaction[];
+  inventory_batches?: SyncInventoryBatch[];
+}
+
+export interface RejectedTransaction {
+  local_id: string;
+  error: string;
+  error_code: string;
+}
+
+export type TransactionUploadResult =
+  | { success: true; syncedCount: number; rejectedCount: number }
   | { success: false; error: string };
 
 // ============================================================================
@@ -208,6 +261,11 @@ export interface AuthStoreState {
   isDataSyncing: boolean;
   dataSyncError: string | null;
   lastDataSyncAt: Date | null;
+  // Transaction sync status (upload)
+  pendingTransactionCount: number;
+  isUploadingSyncing: boolean;
+  uploadSyncError: string | null;
+  lastUploadSyncAt: Date | null;
 }
 
 // ============================================================================

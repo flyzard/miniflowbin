@@ -172,6 +172,7 @@
   {:else}
     <div class="loading">
       <div class="spinner"></div>
+      <p style="color: yellow; margin-top: 20px;">[DEBUG] Login: user=null, loading={loading}, loggingIn={loggingIn}</p>
     </div>
   {/if}
 </div>

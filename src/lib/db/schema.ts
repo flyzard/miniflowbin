@@ -3,7 +3,7 @@
  * Based on PRD Section 8: Data Model
  */
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 5;
 
 /**
  * SQL statements to create all tables
@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS inventory_batches (
   expiration_date TEXT,
   lot_number TEXT,
   distribution_center_id TEXT NOT NULL,
+  is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
   FOREIGN KEY (product_id) REFERENCES products(id),
@@ -127,6 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_batches_position ON inventory_batches(position_id
 CREATE INDEX IF NOT EXISTS idx_batches_dc ON inventory_batches(distribution_center_id);
 CREATE INDEX IF NOT EXISTS idx_batches_received ON inventory_batches(received_at);
 CREATE INDEX IF NOT EXISTS idx_batches_quantity ON inventory_batches(quantity);
+CREATE INDEX IF NOT EXISTS idx_batches_active ON inventory_batches(is_active);
 
 -- Transactions
 CREATE TABLE IF NOT EXISTS transactions (
@@ -142,6 +144,10 @@ CREATE TABLE IF NOT EXISTS transactions (
   distribution_center_id TEXT NOT NULL,
   notes TEXT,
   created_at TEXT NOT NULL,
+  -- Sync tracking (v4)
+  sync_status TEXT NOT NULL DEFAULT 'pending',
+  synced_at TEXT,
+  sync_error TEXT,
   FOREIGN KEY (product_id) REFERENCES products(id),
   FOREIGN KEY (batch_id) REFERENCES inventory_batches(id),
   FOREIGN KEY (from_position_id) REFERENCES storage_positions(id),
@@ -156,6 +162,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_batch ON transactions(batch_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_dc ON transactions(distribution_center_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_timestamp ON transactions(timestamp);
+CREATE INDEX IF NOT EXISTS idx_transactions_sync_status ON transactions(sync_status);
 
 -- App Settings (key-value store)
 CREATE TABLE IF NOT EXISTS app_settings (

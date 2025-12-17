@@ -173,6 +173,26 @@ export async function runMigrations(): Promise<void> {
         version = 3;
         await recordVersion(3);
       }
+
+      // Migration v3 -> v4: Add sync tracking columns to transactions
+      if (version === 3) {
+        console.log('[Migrations] Running migration v3 -> v4: Add sync tracking to transactions');
+        await addColumnIfNotExists('transactions', 'sync_status', "TEXT NOT NULL DEFAULT 'pending'");
+        await addColumnIfNotExists('transactions', 'synced_at', 'TEXT');
+        await addColumnIfNotExists('transactions', 'sync_error', 'TEXT');
+        await exec('CREATE INDEX IF NOT EXISTS idx_transactions_sync_status ON transactions(sync_status)');
+        version = 4;
+        await recordVersion(4);
+      }
+
+      // Migration v4 -> v5: Add is_active column to inventory_batches for soft delete
+      if (version === 4) {
+        console.log('[Migrations] Running migration v4 -> v5: Add is_active to inventory_batches');
+        await addColumnIfNotExists('inventory_batches', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
+        await exec('CREATE INDEX IF NOT EXISTS idx_batches_active ON inventory_batches(is_active)');
+        version = 5;
+        await recordVersion(5);
+      }
     }
 
     console.log('[Migrations] Schema upgrade complete');

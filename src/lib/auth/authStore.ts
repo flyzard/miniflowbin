@@ -29,6 +29,11 @@ const initialState: AuthStoreState = {
   isDataSyncing: false,
   dataSyncError: null,
   lastDataSyncAt: null,
+  // Transaction sync status (upload)
+  pendingTransactionCount: 0,
+  isUploadingSyncing: false,
+  uploadSyncError: null,
+  lastUploadSyncAt: null,
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -196,6 +201,44 @@ function createAuthStore() {
     },
 
     // ─────────────────────────────────────────────────────────
+    // Transaction Upload Sync Status
+    // ─────────────────────────────────────────────────────────
+
+    setPendingTransactionCount: (count: number) => {
+      update(state => ({ ...state, pendingTransactionCount: count }));
+    },
+
+    incrementPendingTransactionCount: () => {
+      update(state => ({
+        ...state,
+        pendingTransactionCount: state.pendingTransactionCount + 1
+      }));
+    },
+
+    decrementPendingTransactionCount: (by: number = 1) => {
+      update(state => ({
+        ...state,
+        pendingTransactionCount: Math.max(0, state.pendingTransactionCount - by)
+      }));
+    },
+
+    setUploadSyncing: (isUploadingSyncing: boolean) => {
+      update(state => ({ ...state, isUploadingSyncing }));
+    },
+
+    setUploadSyncError: (error: string | null) => {
+      update(state => ({ ...state, uploadSyncError: error }));
+    },
+
+    setLastUploadSync: (date: Date) => {
+      update(state => ({
+        ...state,
+        lastUploadSyncAt: date,
+        uploadSyncError: null
+      }));
+    },
+
+    // ─────────────────────────────────────────────────────────
     // Session Management
     // ─────────────────────────────────────────────────────────
 
@@ -348,4 +391,36 @@ export const isDataSyncing = derived(
 export const dataSyncError = derived(
   authStore,
   $auth => $auth.dataSyncError
+);
+
+/**
+ * Has pending transactions that need uploading
+ */
+export const hasPendingTransactions = derived(
+  authStore,
+  $auth => $auth.pendingTransactionCount > 0
+);
+
+/**
+ * Pending transaction count
+ */
+export const pendingTransactionCount = derived(
+  authStore,
+  $auth => $auth.pendingTransactionCount
+);
+
+/**
+ * Is uploading transactions
+ */
+export const isUploadingSyncing = derived(
+  authStore,
+  $auth => $auth.isUploadingSyncing
+);
+
+/**
+ * Upload sync error message (if any)
+ */
+export const uploadSyncError = derived(
+  authStore,
+  $auth => $auth.uploadSyncError
 );
