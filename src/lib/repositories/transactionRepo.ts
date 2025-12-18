@@ -126,14 +126,3 @@ export async function markTransactionsSynced(transactionIds: string[]): Promise<
   );
 }
 
-/**
- * Get rejected transactions for display
- */
-export async function getRejectedTransactions(distributionCenterId: string): Promise<Transaction[]> {
-  return await query<Transaction>(
-    `SELECT * FROM transactions
-     WHERE distribution_center_id = ? AND sync_status = 'rejected'
-     ORDER BY timestamp DESC`,
-    [distributionCenterId]
-  );
-}

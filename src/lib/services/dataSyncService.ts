@@ -2,10 +2,15 @@
  * Data Sync Service
  *
  * Handles bidirectional sync:
- * - Sync UP: Upload local transactions to server
  * - Sync DOWN: Download products, positions, and inventory batches from server
+ * - Sync UP: Upload local transactions to server
  *
  * Called after login and on app startup when authenticated + online.
+ *
+ * Sections:
+ * 1. DATA SYNC DOWN (Server → Local) - fetchAndSyncData, syncToDatabase
+ * 2. TRANSACTION UPLOAD (Local → Server) - uploadPendingTransactions, tryImmediateUpload
+ * 3. INVENTORY BATCH SYNC - syncInventoryBatches
  */
 
 import { getDecryptedDeviceToken } from '../auth/deviceService';
@@ -19,15 +24,19 @@ import * as transactionRepo from '../repositories/transactionRepo';
 import type {
   SyncResponse,
   DataSyncResult,
-  ApiError,
   TransactionUpload,
   TransactionSyncResponse,
   TransactionUploadResult,
   SyncInventoryBatch,
 } from '../auth/types';
+import { parseApiError } from '../utils/api';
 import type { Transaction } from '../types';
 
 const API_BASE = import.meta.env.VITE_FLOWBIN_API_URL || '';
+
+// ============================================================================
+// SECTION 1: DATA SYNC DOWN (Server → Local)
+// ============================================================================
 
 /**
  * Fetch data from server and sync to local database
@@ -65,10 +74,7 @@ export async function fetchAndSyncData(): Promise<DataSyncResult> {
     console.log('[DataSync] Response status:', response.status);
 
     if (!response.ok) {
-      const errorData: ApiError = await response.json().catch(() => ({
-        error: 'unknown',
-        message: `Server error: ${response.status}`
-      }));
+      const errorData = await parseApiError(response);
       console.error('[DataSync] Server error:', errorData);
       return { success: false, error: errorData.message };
     }
@@ -171,7 +177,7 @@ async function syncToDatabase(data: SyncResponse): Promise<void> {
 }
 
 // ============================================================================
-// Transaction Upload (Sync UP)
+// SECTION 2: TRANSACTION UPLOAD (Local → Server)
 // ============================================================================
 
 /**
@@ -217,10 +223,7 @@ export async function uploadPendingTransactions(
     });
 
     if (!response.ok) {
-      const errorData: ApiError = await response.json().catch(() => ({
-        error: 'unknown',
-        message: `Server error: ${response.status}`
-      }));
+      const errorData = await parseApiError(response);
       console.error('[DataSync] Upload failed:', errorData);
       return { success: false, error: errorData.message };
     }
@@ -393,7 +396,7 @@ export async function tryImmediateUpload(transactionId: string): Promise<boolean
 }
 
 // ============================================================================
-// Inventory Batch Sync (Sync DOWN)
+// SECTION 3: INVENTORY BATCH SYNC
 // ============================================================================
 
 /**

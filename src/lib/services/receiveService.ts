@@ -13,8 +13,7 @@ import { TransactionType } from '../types';
 import type { InventoryBatch, Transaction } from '../types';
 import { formatDateCompact, padNumber } from '../utils/date';
 import { formatError, logError } from '../utils/error';
-import { tryImmediateUpload } from './dataSyncService';
-import { authStore } from '../auth/authStore';
+import { recordTransactionWithUpload } from './transactionHelper';
 
 /**
  * Generate a new unique batch number
@@ -142,15 +141,8 @@ export async function executeReceive(input: ReceiveInput): Promise<ReceiveResult
       return { batch, txn };
     });
 
-    // Increment pending transaction count
-    authStore.incrementPendingTransactionCount();
-
-    // Try immediate upload (fire-and-forget, non-blocking)
-    tryImmediateUpload(result.txn.id).then(uploaded => {
-      if (uploaded) {
-        authStore.decrementPendingTransactionCount();
-      }
-    });
+    // Record transaction and attempt immediate upload
+    recordTransactionWithUpload(result.txn.id);
 
     return {
       success: true,

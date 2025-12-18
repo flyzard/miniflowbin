@@ -76,62 +76,62 @@ describe('releaseService', () => {
       distributionCenterId: 'dc-1'
     };
 
-    it('should validate a valid release request', () => {
-      vi.mocked(getBatchById).mockReturnValue(mockBatch);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should validate a valid release request', async () => {
+      vi.mocked(getBatchById).mockResolvedValue(mockBatch);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateRelease(validInput);
+      const result = await validateRelease(validInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
       expect(result.batch).toEqual(mockBatch);
     });
 
-    it('should fail when batch is not found', () => {
-      vi.mocked(getBatchById).mockReturnValue(null);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail when batch is not found', async () => {
+      vi.mocked(getBatchById).mockResolvedValue(null);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateRelease(validInput);
+      const result = await validateRelease(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Batch not found');
     });
 
-    it('should fail when batch has no quantity', () => {
-      vi.mocked(getBatchById).mockReturnValue({ ...mockBatch, quantity: 0 });
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail when batch has no quantity', async () => {
+      vi.mocked(getBatchById).mockResolvedValue({ ...mockBatch, quantity: 0 });
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateRelease(validInput);
+      const result = await validateRelease(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Batch has no available quantity');
     });
 
-    it('should fail when destination position is not found', () => {
-      vi.mocked(getBatchById).mockReturnValue(mockBatch);
-      vi.mocked(getPositionById).mockReturnValue(null);
+    it('should fail when destination position is not found', async () => {
+      vi.mocked(getBatchById).mockResolvedValue(mockBatch);
+      vi.mocked(getPositionById).mockResolvedValue(null);
 
-      const result = validateRelease(validInput);
+      const result = await validateRelease(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Destination position not found');
     });
 
-    it('should fail when destination position is inactive', () => {
-      vi.mocked(getBatchById).mockReturnValue(mockBatch);
-      vi.mocked(getPositionById).mockReturnValue({ ...mockPosition, is_active: false });
+    it('should fail when destination position is inactive', async () => {
+      vi.mocked(getBatchById).mockResolvedValue(mockBatch);
+      vi.mocked(getPositionById).mockResolvedValue({ ...mockPosition, is_active: false });
 
-      const result = validateRelease(validInput);
+      const result = await validateRelease(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Destination position is not active');
     });
 
-    it('should fail when user ID is missing', () => {
-      vi.mocked(getBatchById).mockReturnValue(mockBatch);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail when user ID is missing', async () => {
+      vi.mocked(getBatchById).mockResolvedValue(mockBatch);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateRelease({ ...validInput, userId: '' });
+      const result = await validateRelease({ ...validInput, userId: '' });
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('User ID is required');

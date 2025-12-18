@@ -79,91 +79,91 @@ describe('receiveService', () => {
       distributionCenterId: 'dc-1'
     };
 
-    it('should validate a valid receive request', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should validate a valid receive request', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateReceive(validInput);
+      const result = await validateReceive(validInput);
 
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
     });
 
-    it('should fail when product is not found', () => {
-      vi.mocked(getProductById).mockReturnValue(null);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail when product is not found', async () => {
+      vi.mocked(getProductById).mockResolvedValue(null);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateReceive(validInput);
+      const result = await validateReceive(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Product not found');
     });
 
-    it('should fail when product is inactive', () => {
-      vi.mocked(getProductById).mockReturnValue({ ...mockProduct, is_active: false });
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail when product is inactive', async () => {
+      vi.mocked(getProductById).mockResolvedValue({ ...mockProduct, is_active: false });
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateReceive(validInput);
+      const result = await validateReceive(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Product is not active');
     });
 
-    it('should fail when position is not found', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue(null);
+    it('should fail when position is not found', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue(null);
 
-      const result = validateReceive(validInput);
+      const result = await validateReceive(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Storage position not found');
     });
 
-    it('should fail when position is inactive', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue({ ...mockPosition, is_active: false });
+    it('should fail when position is inactive', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue({ ...mockPosition, is_active: false });
 
-      const result = validateReceive(validInput);
+      const result = await validateReceive(validInput);
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Storage position is not active');
     });
 
-    it('should fail for zero quantity', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail for zero quantity', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateReceive({ ...validInput, quantity: 0 });
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('positive integer'))).toBe(true);
-    });
-
-    it('should fail for negative quantity', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
-
-      const result = validateReceive({ ...validInput, quantity: -5 });
+      const result = await validateReceive({ ...validInput, quantity: 0 });
 
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('positive integer'))).toBe(true);
     });
 
-    it('should fail when user ID is missing', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail for negative quantity', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateReceive({ ...validInput, userId: '' });
+      const result = await validateReceive({ ...validInput, quantity: -5 });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('positive integer'))).toBe(true);
+    });
+
+    it('should fail when user ID is missing', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
+
+      const result = await validateReceive({ ...validInput, userId: '' });
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('User ID is required');
     });
 
-    it('should fail when distribution center ID is missing', () => {
-      vi.mocked(getProductById).mockReturnValue(mockProduct);
-      vi.mocked(getPositionById).mockReturnValue(mockPosition);
+    it('should fail when distribution center ID is missing', async () => {
+      vi.mocked(getProductById).mockResolvedValue(mockProduct);
+      vi.mocked(getPositionById).mockResolvedValue(mockPosition);
 
-      const result = validateReceive({ ...validInput, distributionCenterId: '' });
+      const result = await validateReceive({ ...validInput, distributionCenterId: '' });
 
       expect(result.valid).toBe(false);
       expect(result.errors).toContain('Distribution center ID is required');
@@ -171,32 +171,32 @@ describe('receiveService', () => {
   });
 
   describe('generateBatchNumber', () => {
-    it('should generate batch number with correct format', () => {
-      vi.mocked(getTodayBatchCount).mockReturnValue(0);
+    it('should generate batch number with correct format', async () => {
+      vi.mocked(getTodayBatchCount).mockResolvedValue(0);
 
-      const batchNumber = generateBatchNumber('dc-1');
+      const batchNumber = await generateBatchNumber('dc-1');
 
       expect(batchNumber).toMatch(/^BATCH-\d{8}-001$/);
     });
 
-    it('should increment sequence based on today count', () => {
-      vi.mocked(getTodayBatchCount).mockReturnValue(5);
+    it('should increment sequence based on today count', async () => {
+      vi.mocked(getTodayBatchCount).mockResolvedValue(5);
 
-      const batchNumber = generateBatchNumber('dc-1');
+      const batchNumber = await generateBatchNumber('dc-1');
 
       expect(batchNumber).toMatch(/^BATCH-\d{8}-006$/);
     });
 
-    it('should pad sequence with zeros', () => {
-      vi.mocked(getTodayBatchCount).mockReturnValue(99);
+    it('should pad sequence with zeros', async () => {
+      vi.mocked(getTodayBatchCount).mockResolvedValue(99);
 
-      const batchNumber = generateBatchNumber('dc-1');
+      const batchNumber = await generateBatchNumber('dc-1');
 
       expect(batchNumber).toMatch(/^BATCH-\d{8}-100$/);
     });
 
-    it('should include current date', () => {
-      vi.mocked(getTodayBatchCount).mockReturnValue(0);
+    it('should include current date', async () => {
+      vi.mocked(getTodayBatchCount).mockResolvedValue(0);
 
       const now = new Date();
       const expectedDate = [
@@ -205,7 +205,7 @@ describe('receiveService', () => {
         String(now.getDate()).padStart(2, '0')
       ].join('');
 
-      const batchNumber = generateBatchNumber('dc-1');
+      const batchNumber = await generateBatchNumber('dc-1');
 
       expect(batchNumber).toBe(`BATCH-${expectedDate}-001`);
     });

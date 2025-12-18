@@ -127,17 +127,6 @@ export async function deactivateBatchesForDc(distributionCenterId: string): Prom
 }
 
 /**
- * Count batches for a distribution center
- */
-export async function countBatchesForDc(distributionCenterId: string): Promise<number> {
-  const result = await queryOne<{ count: number }>(
-    'SELECT COUNT(*) as count FROM inventory_batches WHERE distribution_center_id = ?',
-    [distributionCenterId]
-  );
-  return result?.count ?? 0;
-}
-
-/**
  * Upsert multiple batches (for sync down)
  * Batches from server are marked active; missing ones stay inactive
  */

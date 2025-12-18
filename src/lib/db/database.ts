@@ -3,6 +3,22 @@
  *
  * Provides persistent local storage using native SQLite via Capacitor.
  * All operations are async for native platform compatibility.
+ *
+ * PLATFORM PATTERNS:
+ * ─────────────────────────────────────────────────────────────────────
+ * Platform detection uses Capacitor.getPlatform() returning 'web', 'android', or 'ios'.
+ *
+ * WEB (jeep-sqlite):
+ * - Uses sql.js compiled to WebAssembly (WASM files in /public/assets)
+ * - Database persisted to IndexedDB via saveToStore() after transactions
+ * - Transactions are handled by sql.js internally; we just save after
+ *
+ * NATIVE (Android/iOS):
+ * - Uses native SQLite via Capacitor plugin
+ * - Requires explicit beginTransaction()/commitTransaction()/rollbackTransaction()
+ * - The run() method has implicit transaction param - pass false when inside transaction
+ * - Use query() for PRAGMAs (they return values; execute() fails on Android)
+ * ─────────────────────────────────────────────────────────────────────
  */
 
 import { Capacitor } from '@capacitor/core';

@@ -10,9 +10,9 @@ import type {
   ActivationResponse,
   RefreshResponse,
   ValidateResponse,
-  ApiError,
   ActivationResult
 } from './types';
+import { parseApiError } from '../utils/api';
 
 const API_BASE = import.meta.env.VITE_FLOWBIN_API_URL || '';
 const DEVICE_ID_KEY = 'flowbin_device_id';
@@ -112,10 +112,7 @@ export async function activateDevice(
     });
 
     if (!response.ok) {
-      const errorData: ApiError = await response.json().catch(() => ({
-        error: 'unknown',
-        message: `Server error: ${response.status}`
-      }));
+      const errorData = await parseApiError(response);
       return { success: false, error: errorData.message };
     }
 
@@ -251,11 +248,7 @@ export async function refreshTokens(): Promise<boolean> {
     });
 
     if (!response.ok) {
-      const errorData: ApiError = await response.json().catch(() => ({
-        error: 'unknown',
-        message: 'Refresh failed'
-      }));
-
+      const errorData = await parseApiError(response);
       console.warn('[DeviceService] Token refresh failed:', errorData.error);
       return false;
     }
@@ -313,10 +306,7 @@ export async function validateAndSync(): Promise<{
     });
 
     if (!response.ok) {
-      const errorData: ApiError = await response.json().catch(() => ({
-        error: 'unknown',
-        message: 'Validation failed'
-      }));
+      const errorData = await parseApiError(response);
 
       if (errorData.error === 'device_revoked') {
         return { valid: false, status: 'revoked' };

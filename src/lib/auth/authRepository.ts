@@ -323,26 +323,6 @@ export async function endAuthSession(sessionId: number): Promise<void> {
 }
 
 /**
- * End all active sessions for a user
- */
-export async function endAllUserSessions(userId: string): Promise<void> {
-  await exec(
-    'UPDATE auth_sessions SET is_active = 0, ended_at = ? WHERE user_id = ? AND is_active = 1',
-    [now(), userId]
-  );
-}
-
-/**
- * Get active session for user
- */
-export async function getActiveSession(userId: string): Promise<AuthSession | null> {
-  return await queryOne<AuthSession>(
-    'SELECT * FROM auth_sessions WHERE user_id = ? AND is_active = 1',
-    [userId]
-  );
-}
-
-/**
  * Clear all auth sessions
  */
 export async function clearAuthSessions(): Promise<void> {

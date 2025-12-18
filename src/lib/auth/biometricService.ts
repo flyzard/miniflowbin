@@ -125,13 +125,6 @@ export async function registerBiometric(userId: string): Promise<boolean> {
   }
 }
 
-/**
- * Disable biometric for a user
- */
-export async function disableBiometric(userId: string): Promise<void> {
-  await authRepo.updateBiometricCredential(userId, null);
-}
-
 // ─────────────────────────────────────────────────────────────
 // Authentication
 // ─────────────────────────────────────────────────────────────
