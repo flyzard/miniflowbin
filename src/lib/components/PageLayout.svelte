@@ -22,6 +22,8 @@
     background: var(--color-bg-card);
     border-radius: var(--radius-card);
     padding: var(--space-lg);
+    max-width: 480px;
+    margin: 0 auto;
   }
 
   h1 {

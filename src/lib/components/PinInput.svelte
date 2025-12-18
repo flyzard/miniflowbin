@@ -134,6 +134,19 @@
   .dot.filled {
     background: var(--color-accent-primary);
     border-color: var(--color-accent-primary);
+    animation: dot-fill 150ms ease-out;
+  }
+
+  @keyframes dot-fill {
+    0% {
+      transform: scale(0.8);
+    }
+    50% {
+      transform: scale(1.15);
+    }
+    100% {
+      transform: scale(1);
+    }
   }
 
   .error {

@@ -82,14 +82,14 @@
     gap: var(--space-sm);
     padding: var(--space-md);
     background: var(--color-bg-input);
-    border: 2px solid transparent;
+    border: 2px solid var(--color-border-subtle);
     border-radius: var(--radius-input);
     text-align: left;
     transition: border-color var(--transition-fast), background var(--transition-fast);
   }
 
   .position-card:hover {
-    border-color: var(--color-border-subtle);
+    border-color: var(--color-text-secondary);
   }
 
   .position-card.selected {

@@ -58,7 +58,6 @@
 {:else if !isInitialized}
   <div class="loading-screen">
     <LoadingSpinner message="Initializing FlowBin..." size="large" />
-    <p style="color: yellow; margin-top: 20px;">[DEBUG] App.svelte: isInitialized=false</p>
   </div>
 {:else}
   <AuthGuard>

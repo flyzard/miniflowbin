@@ -145,6 +145,11 @@
     cursor: not-allowed;
   }
 
+  .sync-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+  }
+
   .sync-btn:active:not(:disabled) {
     transform: scale(0.95);
   }
@@ -199,6 +204,10 @@
     color: var(--color-text-secondary);
     cursor: pointer;
     transition: all var(--transition-fast);
+  }
+
+  .logout-btn:hover {
+    color: var(--color-text-primary);
   }
 
   .logout-btn:active {

@@ -106,18 +106,33 @@
   }
 
   .operation-card.receive {
-    background: var(--color-bg-card);
-    border: 1px solid var(--color-border-subtle);
+    background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(34, 197, 94, 0.08) 100%);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+  }
+
+  .operation-card.receive:hover {
+    border-color: rgba(34, 197, 94, 0.5);
   }
 
   .operation-card.release {
-    background: var(--color-bg-input);
-    border: 1px solid var(--color-border-subtle);
+    background: linear-gradient(135deg, var(--color-bg-input) 0%, rgba(59, 130, 246, 0.08) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+  }
+
+  .operation-card.release:hover {
+    border-color: rgba(59, 130, 246, 0.5);
   }
 
   .icon {
     margin-bottom: var(--space-md);
-    color: var(--color-text-primary);
+  }
+
+  .receive .icon {
+    color: var(--color-accent-success);
+  }
+
+  .release .icon {
+    color: #3B82F6;
   }
 
   .label {

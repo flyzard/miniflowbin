@@ -172,7 +172,6 @@
   {:else}
     <div class="loading">
       <div class="spinner"></div>
-      <p style="color: yellow; margin-top: 20px;">[DEBUG] Login: user=null, loading={loading}, loggingIn={loggingIn}</p>
     </div>
   {/if}
 </div>
@@ -201,12 +200,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-bg-input);
+    background: linear-gradient(135deg, var(--color-bg-input) 0%, var(--color-bg-card) 100%);
+    border: 2px solid var(--color-border-subtle);
     border-radius: 50%;
     font-size: 32px;
     font-weight: var(--font-weight-bold);
     color: var(--color-accent-primary);
     margin-bottom: var(--space-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   }
 
   .user-info h2 {
