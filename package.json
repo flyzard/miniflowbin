@@ -21,14 +21,14 @@
     "@tsconfig/svelte": "^5.0.6",
     "@types/bun": "latest",
     "@types/papaparse": "^5.5.2",
-    "@vitest/coverage-v8": "^4.0.15",
+    "@vitest/coverage-v8": "^4.0.16",
     "jsdom": "^27.3.0",
     "svelte": "^5.46.0",
     "svelte-check": "^4.3.4",
     "tslib": "^2.8.1",
     "typescript": "^5.9.3",
     "vite": "^7.3.0",
-    "vitest": "^4.0.15"
+    "vitest": "^4.0.16"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^7.0.2",
