@@ -4,6 +4,7 @@
   import { releaseFlow, canSelectDestination } from '../../lib/stores/releaseFlow';
   import { listBatchesWithDetails } from '../../lib/repositories/batchRepo';
   import { getPositionById } from '../../lib/repositories/positionRepo';
+  import { t } from '../../lib/i18n';
   import type { InventoryBatch, StoragePosition } from '../../lib/types';
 
   // Local state for async data
@@ -54,21 +55,21 @@
   }
 </script>
 
-<PageLayout title="Select Source Position">
+<PageLayout title={$t('release.step2.title')}>
   <BackNav slot="nav" href="/release" />
-  <StepIndicator currentStep={2} totalSteps={3} stepName="Choose where to pick from" />
+  <StepIndicator currentStep={2} totalSteps={3} stepName={$t('release.step2.name')} />
 
   {#if $releaseFlow.product}
     <p class="product-info">
-      Picking: <strong>{$releaseFlow.product.name}</strong>
-      <span class="quantity-badge">Full batch</span>
+      {$t('release.picking')} <strong>{$releaseFlow.product.name}</strong>
+      <span class="quantity-badge">{$t('release.full_batch')}</span>
     </p>
   {/if}
 
   {#if batches.length === 0}
-    <EmptyState message="No batches available for this product" />
+    <EmptyState message={$t('release.no_batches')} />
   {:else}
-    <p class="fifo-hint">Oldest batches shown first (FIFO)</p>
+    <p class="fifo-hint">{$t('release.fifo_hint')}</p>
 
     <div class="positions-list">
       {#each batches as batch, index}
@@ -88,7 +89,7 @@
   {/if}
 
   <Button disabled={!canProceed} on:click={handleContinue}>
-    Continue
+    {$t('common.continue')}
   </Button>
 </PageLayout>
 

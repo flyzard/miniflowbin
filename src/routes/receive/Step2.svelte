@@ -6,6 +6,7 @@
   import { currentUser } from '../../lib/auth';
   import { receiveFlow, resetReceiveFlow } from '../../lib/stores/receiveFlow';
   import { executeReceive, generateBatchNumber } from '../../lib/services/receiveService';
+  import { t } from '../../lib/i18n';
   import { onMount } from 'svelte';
 
   let isSubmitting = false;
@@ -21,23 +22,23 @@
   // Build info rows for display
   $: infoRows = [
     {
-      label: 'Product',
+      label: $t('form.product'),
       value: $receiveFlow.product ? `${$receiveFlow.product.name} (${$receiveFlow.product.sku})` : '-',
       icon: 'product' as const
     },
     {
-      label: 'Quantity',
+      label: $t('form.quantity'),
       value: String($receiveFlow.quantity),
       icon: 'quantity' as const
     },
     {
-      label: 'Position',
+      label: $t('form.position.label'),
       value: $receiveFlow.position ? `${$receiveFlow.position.code} - ${$receiveFlow.position.zone}` : '-',
       icon: 'location' as const
     },
     {
-      label: 'Batch #',
-      value: $receiveFlow.batchNumber ?? 'Generating...',
+      label: $t('form.batch'),
+      value: $receiveFlow.batchNumber ?? $t('form.batch.generating'),
       icon: 'batch' as const,
       highlight: 'success' as const
     }
@@ -46,7 +47,7 @@
   async function handleConfirm() {
     const { product, position, quantity } = $receiveFlow;
     if (!product || !position || !$selectedDc || !$currentUser) {
-      showError('Missing required data');
+      showError($t('error.missing_data'));
       return;
     }
 
@@ -62,24 +63,24 @@
       });
 
       if (result.success) {
-        showSuccess(`Received ${quantity} units of ${product.name}`);
+        showSuccess($t('receive.success', { quantity, name: product.name ?? product.sku }));
         resetReceiveFlow();
         push('/');
       } else {
-        showError(result.error ?? 'Failed to receive inventory');
+        showError(result.error ?? $t('error.receive_failed'));
       }
     } catch (error) {
       console.error('Receive error:', error);
-      showError('An unexpected error occurred');
+      showError($t('error.unexpected'));
     } finally {
       isSubmitting = false;
     }
   }
 </script>
 
-<PageLayout title="Confirm Receiving">
+<PageLayout title={$t('receive.confirm.title')}>
   <BackNav slot="nav" href="/receive" />
-  <StepIndicator currentStep={2} totalSteps={2} stepName="Review and confirm" />
+  <StepIndicator currentStep={2} totalSteps={2} stepName={$t('receive.step2.name')} />
 
   <div class="info-section">
     <InfoCard rows={infoRows} />
@@ -87,14 +88,14 @@
 
   <div class="actions">
     <Button variant="secondary" on:click={() => push('/receive')}>
-      Back
+      {$t('common.back')}
     </Button>
     <Button
       loading={isSubmitting}
       disabled={!$receiveFlow.product || !$receiveFlow.position || !$receiveFlow.batchNumber}
       on:click={handleConfirm}
     >
-      Confirm
+      {$t('common.confirm')}
     </Button>
   </div>
 </PageLayout>

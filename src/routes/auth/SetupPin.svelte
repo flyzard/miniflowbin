@@ -8,6 +8,7 @@
   import { getPrimaryAuthUser } from '../../lib/auth/authRepository';
   import { completeLogin } from '../../lib/auth';
   import { AUTH_CONSTANTS } from '../../lib/auth/types';
+  import { t } from '../../lib/i18n';
 
   type Step = 'enter' | 'confirm' | 'biometric';
 
@@ -39,7 +40,7 @@
     }
 
     if (!userId) {
-      error = 'User not found. Please activate device again.';
+      error = $t('auth.pin.user_not_found');
     }
   });
 
@@ -64,7 +65,7 @@
       if (pin === confirmPin) {
         savePin();
       } else {
-        error = 'PINs do not match. Try again.';
+        error = $t('auth.pin.mismatch');
         step = 'enter';
         pin = '';
         confirmPin = '';
@@ -75,7 +76,7 @@
 
   async function savePin() {
     if (!userId) {
-      error = 'User not found';
+      error = $t('common.user_not_found');
       return;
     }
 
@@ -85,7 +86,7 @@
     const result = await setupPin(userId, pin);
 
     if (!result.success) {
-      error = result.error || 'Failed to save PIN';
+      error = result.error || $t('auth.pin.save_failed');
       loading = false;
       step = 'enter';
       pin = '';
@@ -98,7 +99,7 @@
     if (hasPendingActivation()) {
       const activationComplete = await completeActivation();
       if (!activationComplete) {
-        error = 'Failed to complete activation';
+        error = $t('auth.pin.activation_failed');
         loading = false;
         step = 'enter';
         pin = '';
@@ -127,7 +128,7 @@
     if (success) {
       await finishSetup();
     } else {
-      error = 'Failed to enable biometric. You can try again in settings.';
+      error = $t('auth.biometric.failed');
     }
   }
 
@@ -150,9 +151,9 @@
 <div class="setup-pin-page safe-area-top safe-area-bottom">
   {#if step === 'enter'}
     <div class="header">
-      <h1>Create PIN</h1>
+      <h1>{$t('auth.pin.create_title')}</h1>
       <p class="text-secondary">
-        Enter a {AUTH_CONSTANTS.MIN_PIN_LENGTH}-{AUTH_CONSTANTS.MAX_PIN_LENGTH} digit PIN for quick access
+        {$t('auth.pin.create_subtitle', { min: AUTH_CONSTANTS.MIN_PIN_LENGTH, max: AUTH_CONSTANTS.MAX_PIN_LENGTH })}
       </p>
     </div>
 
@@ -165,8 +166,8 @@
 
   {:else if step === 'confirm'}
     <div class="header">
-      <h1>Confirm PIN</h1>
-      <p class="text-secondary">Enter your PIN again to confirm</p>
+      <h1>{$t('auth.pin.confirm_title')}</h1>
+      <p class="text-secondary">{$t('auth.pin.confirm_subtitle')}</p>
     </div>
 
     <PinInput
@@ -178,8 +179,8 @@
 
   {:else if step === 'biometric'}
     <div class="header">
-      <h1>Enable Biometric?</h1>
-      <p class="text-secondary">Use fingerprint or face recognition for faster login</p>
+      <h1>{$t('auth.biometric.title')}</h1>
+      <p class="text-secondary">{$t('auth.biometric.subtitle')}</p>
     </div>
 
     <div class="biometric-icon">
@@ -198,10 +199,10 @@
 
     <div class="biometric-actions">
       <Button on:click={enableBiometric} disabled={loading} {loading}>
-        {loading ? 'Setting up...' : 'Enable Biometric'}
+        {loading ? $t('auth.biometric.setting_up') : $t('auth.biometric.enable')}
       </Button>
       <Button variant="secondary" on:click={skipBiometric} disabled={loading}>
-        Skip for Now
+        {$t('auth.biometric.skip')}
       </Button>
     </div>
   {/if}

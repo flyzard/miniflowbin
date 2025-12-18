@@ -263,6 +263,7 @@ export interface AuthStoreState {
   lastDataSyncAt: Date | null;
   // Transaction sync status (upload)
   pendingTransactionCount: number;
+  rejectedTransactionCount: number;
   isUploadingSyncing: boolean;
   uploadSyncError: string | null;
   lastUploadSyncAt: Date | null;

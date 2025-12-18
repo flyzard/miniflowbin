@@ -126,3 +126,56 @@ export async function markTransactionsSynced(transactionIds: string[]): Promise<
   );
 }
 
+// ============================================================================
+// Rejected Transaction Functions
+// ============================================================================
+
+/**
+ * Get all rejected transactions
+ */
+export async function getRejectedTransactions(distributionCenterId: string): Promise<Transaction[]> {
+  return await query<Transaction>(
+    `SELECT * FROM transactions
+     WHERE distribution_center_id = ?
+       AND sync_status = 'rejected'
+     ORDER BY timestamp DESC`,
+    [distributionCenterId]
+  );
+}
+
+/**
+ * Get count of rejected transactions
+ */
+export async function getRejectedTransactionCount(distributionCenterId: string): Promise<number> {
+  const result = await queryOne<{ count: number }>(
+    `SELECT COUNT(*) as count FROM transactions
+     WHERE distribution_center_id = ? AND sync_status = 'rejected'`,
+    [distributionCenterId]
+  );
+  return result?.count ?? 0;
+}
+
+/**
+ * Reset a rejected transaction to pending for retry
+ */
+export async function resetTransactionToPending(transactionId: string): Promise<void> {
+  await exec(
+    `UPDATE transactions
+     SET sync_status = 'pending', sync_error = NULL
+     WHERE id = ?`,
+    [transactionId]
+  );
+}
+
+/**
+ * Reset all rejected transactions to pending for bulk retry
+ */
+export async function resetAllRejectedToPending(distributionCenterId: string): Promise<void> {
+  await exec(
+    `UPDATE transactions
+     SET sync_status = 'pending', sync_error = NULL
+     WHERE distribution_center_id = ? AND sync_status = 'rejected'`,
+    [distributionCenterId]
+  );
+}
+

@@ -105,9 +105,14 @@ export async function fetchAndSyncData(): Promise<DataSyncResult> {
 
   } catch (error) {
     console.error('[DataSync] Sync failed:', error);
+    // Network error (couldn't reach server)
+    if (error instanceof TypeError || !navigator.onLine) {
+      return { success: false, error: 'No connection' };
+    }
+    // Other errors - use actual message
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Network error. Please check your connection.'
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }
@@ -245,9 +250,14 @@ export async function uploadPendingTransactions(
 
   } catch (error) {
     console.error('[DataSync] Upload failed:', error);
+    // Network error (couldn't reach server)
+    if (error instanceof TypeError || !navigator.onLine) {
+      return { success: false, error: 'No connection' };
+    }
+    // Other errors - use actual message
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Network error during upload'
+      error: error instanceof Error ? error.message : 'Unknown error'
     };
   }
 }

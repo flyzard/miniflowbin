@@ -3,6 +3,7 @@
   import { Header, Icon } from '../lib/components';
   import { resetReceiveFlow } from '../lib/stores/receiveFlow';
   import { resetReleaseFlow } from '../lib/stores/releaseFlow';
+  import { t } from '../lib/i18n';
 
   function goToReceive() {
     resetReceiveFlow();
@@ -21,26 +22,26 @@
   <main class="content">
     <div class="title-row">
       <div>
-        <h1 class="title">Product Restock</h1>
-        <p class="subtitle">Select an operation</p>
+        <h1 class="title">{$t('home.title')}</h1>
+        <p class="subtitle">{$t('home.subtitle')}</p>
       </div>
     </div>
 
     <div class="operations">
       <button class="operation-card receive" on:click={goToReceive}>
-        <div class="icon">
+        <div class="icon-wrapper">
           <Icon name="arrow-down" size="xl" />
         </div>
-        <span class="label">Receive</span>
-        <span class="description">Add inventory to storage</span>
+        <span class="label">{$t('home.receive')}</span>
+        <span class="description">{$t('home.receive.description')}</span>
       </button>
 
       <button class="operation-card release" on:click={goToRelease}>
-        <div class="icon">
+        <div class="icon-wrapper">
           <Icon name="arrow-up" size="xl" />
         </div>
-        <span class="label">Release</span>
-        <span class="description">Move inventory out</span>
+        <span class="label">{$t('home.release')}</span>
+        <span class="description">{$t('home.release.description')}</span>
       </button>
     </div>
   </main>
@@ -78,8 +79,8 @@
   }
 
   .operations {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--space-md);
   }
 
@@ -88,51 +89,63 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-xl);
+    padding: var(--space-xl) var(--space-lg);
     border-radius: var(--radius-card);
     cursor: pointer;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    transition: all var(--transition-normal);
     text-align: center;
-    min-height: 160px;
+    min-height: 180px;
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .operation-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.08) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+  }
+
+  .operation-card:hover::before {
+    opacity: 1;
   }
 
   .operation-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-card);
+    transform: translateY(-4px);
+    border-color: rgba(20, 184, 166, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(20, 184, 166, 0.1);
   }
 
   .operation-card:active {
-    transform: translateY(0);
+    transform: translateY(-2px);
   }
 
-  .operation-card.receive {
-    background: linear-gradient(135deg, var(--color-bg-card) 0%, rgba(34, 197, 94, 0.08) 100%);
-    border: 1px solid rgba(34, 197, 94, 0.3);
-  }
-
-  .operation-card.receive:hover {
-    border-color: rgba(34, 197, 94, 0.5);
-  }
-
-  .operation-card.release {
-    background: linear-gradient(135deg, var(--color-bg-input) 0%, rgba(59, 130, 246, 0.08) 100%);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-  }
-
-  .operation-card.release:hover {
-    border-color: rgba(59, 130, 246, 0.5);
-  }
-
-  .icon {
+  .icon-wrapper {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
     margin-bottom: var(--space-md);
+    position: relative;
+    z-index: 1;
   }
 
-  .receive .icon {
+  .receive .icon-wrapper {
+    background: rgba(34, 197, 94, 0.15);
     color: var(--color-accent-success);
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.2);
   }
 
-  .release .icon {
-    color: #3B82F6;
+  .release .icon-wrapper {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.2);
   }
 
   .label {
@@ -140,10 +153,20 @@
     font-weight: var(--font-weight-semibold);
     color: var(--color-text-primary);
     margin-bottom: var(--space-xs);
+    position: relative;
+    z-index: 1;
   }
 
   .description {
     font-size: var(--font-size-secondary);
     color: var(--color-text-secondary);
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 400px) {
+    .operations {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

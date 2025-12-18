@@ -18,6 +18,9 @@
   import Login from './routes/auth/Login.svelte';
   import Locked from './routes/auth/Locked.svelte';
 
+  // Sync routes
+  import RejectedTransactions from './routes/sync/RejectedTransactions.svelte';
+
   // Route definitions
   const routes = {
     // Auth routes
@@ -32,6 +35,8 @@
     '/release': ReleaseStep1,
     '/release/source': ReleaseStep2,
     '/release/confirm': ReleaseStep3,
+    // Sync routes
+    '/sync/rejected': RejectedTransactions,
     '*': Home
   };
 

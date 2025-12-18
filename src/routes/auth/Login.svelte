@@ -12,6 +12,7 @@
   import { getPrimaryAuthUser } from '../../lib/auth/authRepository';
   import { completeLogin } from '../../lib/auth';
   import { authStore, isDataSyncing, dataSyncError } from '../../lib/auth/authStore';
+  import { t } from '../../lib/i18n';
   import type { AuthUser } from '../../lib/auth/types';
 
   let user: AuthUser | null = null;
@@ -98,9 +99,7 @@
   }
 
   function handleNotMe() {
-    const confirmed = confirm(
-      'This will clear all data on this device and require re-activation. Continue?'
-    );
+    const confirmed = confirm($t('auth.login.not_me_confirm'));
     if (confirmed) {
       authStore.reset();
       push('/auth/activate');
@@ -114,9 +113,9 @@
       <div class="spinner"></div>
       <p class="sync-status">
         {#if $isDataSyncing}
-          Syncing warehouse data...
+          {$t('auth.login.syncing')}
         {:else}
-          Signing in...
+          {$t('auth.login.signing_in')}
         {/if}
       </p>
     </div>
@@ -131,11 +130,11 @@
 
     {#if lockedUntil && lockedUntil > new Date()}
       <div class="locked-message">
-        <p>Account temporarily locked</p>
-        <p class="text-secondary">Try again at {formatLockoutTime(lockedUntil)}</p>
+        <p>{$t('auth.login.locked')}</p>
+        <p class="text-secondary">{$t('auth.login.try_again_at', { time: formatLockoutTime(lockedUntil) })}</p>
       </div>
     {:else}
-      <p class="instruction">Enter your PIN</p>
+      <p class="instruction">{$t('auth.login.enter_pin')}</p>
 
       <PinInput
         bind:this={pinInputRef}
@@ -146,7 +145,7 @@
 
       {#if attemptsRemaining !== undefined && attemptsRemaining < 5}
         <p class="attempts-warning">
-          {attemptsRemaining} attempt{attemptsRemaining !== 1 ? 's' : ''} remaining
+          {attemptsRemaining === 1 ? $t('auth.login.attempts_remaining', { count: attemptsRemaining }) : $t('auth.login.attempts_remaining_plural', { count: attemptsRemaining })}
         </p>
       {/if}
 
@@ -161,12 +160,12 @@
             <path d="M8 15c0-2.2 1.8-4 4-4"/>
             <path d="M12 3c4.97 0 9 4.03 9 9 0 1.77-.5 3.42-1.38 4.81"/>
           </svg>
-          <span>Use Biometric</span>
+          <span>{$t('auth.biometric.use')}</span>
         </button>
       {/if}
 
       <button class="not-me-link" on:click={handleNotMe}>
-        It's not me
+        {$t('auth.login.not_me')}
       </button>
     {/if}
   {:else}

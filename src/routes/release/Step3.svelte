@@ -6,6 +6,7 @@
   import { currentUser } from '../../lib/auth';
   import { releaseFlow, resetReleaseFlow, effectiveQuantity } from '../../lib/stores/releaseFlow';
   import { executeRelease, resolveDestinationPosition } from '../../lib/services/releaseService';
+  import { t } from '../../lib/i18n';
 
   let isSubmitting = false;
 
@@ -29,17 +30,17 @@
   // Build info rows for display
   $: infoRows = [
     {
-      label: 'Product',
+      label: $t('form.product'),
       value: $releaseFlow.product ? `${$releaseFlow.product.name} (${$releaseFlow.product.sku})` : '-',
       icon: 'product' as const
     },
     {
-      label: 'Quantity',
-      value: `${qty} (full batch)`,
+      label: $t('form.quantity'),
+      value: $t('release.quantity_full_batch', { quantity: qty }),
       icon: 'quantity' as const
     },
     {
-      label: 'Batch #',
+      label: $t('form.batch'),
       value: $releaseFlow.sourceBatch?.batch_number ?? '-',
       icon: 'batch' as const
     }
@@ -48,7 +49,7 @@
   async function handleConfirm() {
     const { sourceBatch, destinationPosition } = $releaseFlow;
     if (!sourceBatch || !destinationPosition || !$selectedDc || !$currentUser) {
-      showError('Missing required data');
+      showError($t('error.missing_data'));
       return;
     }
 
@@ -64,24 +65,24 @@
       });
 
       if (result.success) {
-        showSuccess(`Released ${result.releasedQuantity} units of ${$releaseFlow.product?.name}`);
+        showSuccess($t('release.success', { quantity: result.releasedQuantity ?? qty, name: $releaseFlow.product?.name ?? $releaseFlow.product?.sku ?? '' }));
         resetReleaseFlow();
         push('/');
       } else {
-        showError(result.error ?? 'Failed to release inventory');
+        showError(result.error ?? $t('error.release_failed'));
       }
     } catch (error) {
       console.error('Release error:', error);
-      showError('An unexpected error occurred');
+      showError($t('error.unexpected'));
     } finally {
       isSubmitting = false;
     }
   }
 </script>
 
-<PageLayout title="Confirm Release">
+<PageLayout title={$t('release.step3.title')}>
   <BackNav slot="nav" href="/release/source" />
-  <StepIndicator currentStep={3} totalSteps={3} stepName="Review and confirm" />
+  <StepIndicator currentStep={3} totalSteps={3} stepName={$t('release.step3.name')} />
 
   <div class="info-section">
     <InfoCard rows={infoRows} />
@@ -89,7 +90,7 @@
 
   <div class="movement">
     <div class="location from">
-      <span class="location-label">From</span>
+      <span class="location-label">{$t('movement.from')}</span>
       <span class="location-value">{$releaseFlow.sourcePosition?.code ?? '-'}</span>
       <span class="location-zone">{$releaseFlow.sourcePosition?.zone ?? ''}</span>
     </div>
@@ -97,7 +98,7 @@
       <Icon name="arrow-right" size="lg" />
     </div>
     <div class="location to">
-      <span class="location-label">To</span>
+      <span class="location-label">{$t('movement.to')}</span>
       <span class="location-value">{$releaseFlow.destinationPosition?.code ?? '-'}</span>
       <span class="location-zone">{$releaseFlow.destinationPosition?.zone ?? ''}</span>
     </div>
@@ -105,14 +106,14 @@
 
   <div class="actions">
     <Button variant="secondary" on:click={() => push('/release/source')}>
-      Back
+      {$t('common.back')}
     </Button>
     <Button
       loading={isSubmitting}
       disabled={!$releaseFlow.sourceBatch || !$releaseFlow.destinationPosition}
       on:click={handleConfirm}
     >
-      Confirm
+      {$t('common.confirm')}
     </Button>
   </div>
 </PageLayout>

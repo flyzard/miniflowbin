@@ -3,6 +3,7 @@
   import { Button } from '../../lib/components';
   import { authStatus } from '../../lib/auth/authStore';
   import { deactivateDevice } from '../../lib/auth';
+  import { t } from '../../lib/i18n';
 
   $: status = $authStatus;
   $: isRevoked = status === 'revoked';
@@ -36,36 +37,34 @@
 
   <h1>
     {#if isRevoked}
-      Device Revoked
+      {$t('auth.locked.revoked_title')}
     {:else}
-      Device Suspended
+      {$t('auth.locked.suspended_title')}
     {/if}
   </h1>
 
   <p class="description text-secondary">
     {#if isRevoked}
-      This device has been permanently revoked and can no longer access FlowBin.
-      Contact your administrator for assistance.
+      {$t('auth.locked.revoked_description')}
     {:else}
-      This device has been temporarily suspended.
-      Contact your administrator to restore access.
+      {$t('auth.locked.suspended_description')}
     {/if}
   </p>
 
   <div class="actions">
     {#if !showDeactivateConfirm}
       <Button variant="secondary" on:click={() => showDeactivateConfirm = true}>
-        Deactivate Device
+        {$t('auth.locked.deactivate')}
       </Button>
     {:else}
       <div class="confirm-box">
-        <p>This will remove all local data. Are you sure?</p>
+        <p>{$t('auth.locked.deactivate_confirm')}</p>
         <div class="confirm-actions">
           <Button variant="secondary" on:click={() => showDeactivateConfirm = false} fullWidth={false}>
-            Cancel
+            {$t('common.cancel')}
           </Button>
           <Button on:click={handleDeactivate} {loading} fullWidth={false}>
-            Confirm
+            {$t('common.confirm')}
           </Button>
         </div>
       </div>

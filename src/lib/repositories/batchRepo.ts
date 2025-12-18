@@ -88,17 +88,20 @@ export async function updateBatchQuantity(id: string, newQuantity: number): Prom
 }
 
 /**
- * Get the count of batches created today (for batch number generation)
+ * Get the max sequence number for today's batches (for batch number generation)
+ * Queries by batch_number prefix to include synced batches
  */
 export async function getTodayBatchCount(distributionCenterId: string): Promise<number> {
-  const today = getTodayDate();
-  const result = await queryOne<{ count: number }>(
-    `SELECT COUNT(*) as count FROM inventory_batches
+  const today = getTodayDate().replace(/-/g, ''); // Convert YYYY-MM-DD to YYYYMMDD
+  const prefix = `BATCH-${today}-%`;
+  const result = await queryOne<{ max_seq: number | null }>(
+    `SELECT MAX(CAST(SUBSTR(batch_number, -3) AS INTEGER)) as max_seq
+     FROM inventory_batches
      WHERE distribution_center_id = ?
-     AND DATE(created_at) = ?`,
-    [distributionCenterId, today]
+     AND batch_number LIKE ?`,
+    [distributionCenterId, prefix]
   );
-  return result?.count ?? 0;
+  return result?.max_seq ?? 0;
 }
 
 // ============================================================================

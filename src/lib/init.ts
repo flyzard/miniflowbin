@@ -8,6 +8,10 @@ import { initDatabase } from './db/database';
 import { initializeSchema } from './db/migrations';
 import { initDeviceAuth } from './auth';
 import { initDistributionCenter } from './stores/distributionCenter';
+import { initLocale } from './i18n';
+import { authStore } from './auth/authStore';
+import * as transactionRepo from './repositories/transactionRepo';
+import * as settingsRepo from './repositories/settingsRepo';
 
 let initialized = false;
 
@@ -41,6 +45,19 @@ export async function initApp(): Promise<void> {
 
     await initDistributionCenter();
     console.log('[Init] Distribution center initialized');
+
+    // Initialize transaction counts
+    const dcId = await settingsRepo.getSelectedDcId();
+    if (dcId) {
+      const pendingCount = await transactionRepo.getPendingTransactionCount(dcId);
+      const rejectedCount = await transactionRepo.getRejectedTransactionCount(dcId);
+      authStore.setPendingTransactionCount(pendingCount);
+      authStore.setRejectedTransactionCount(rejectedCount);
+      console.log(`[Init] Transaction counts: ${pendingCount} pending, ${rejectedCount} rejected`);
+    }
+
+    await initLocale();
+    console.log('[Init] Locale initialized');
 
     initialized = true;
     console.log('[Init] App initialization complete');

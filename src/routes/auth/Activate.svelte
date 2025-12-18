@@ -2,10 +2,10 @@
   import { push } from 'svelte-spa-router';
   import { Button } from '../../lib/components';
   import { activateDevice, isApiConfigured } from '../../lib/auth/deviceService';
+  import { t, locale, setLocale } from '../../lib/i18n';
 
   let email = '';
   let password = '';
-  let deviceName = '';
   let loading = false;
   let error = '';
 
@@ -14,14 +14,14 @@
 
   async function handleSubmit() {
     if (!email || !password) {
-      error = 'Please enter email and password';
+      error = $t('auth.activate.enter_credentials');
       return;
     }
 
     loading = true;
     error = '';
 
-    const result = await activateDevice(email, password, deviceName || undefined);
+    const result = await activateDevice(email, password);
 
     loading = false;
 
@@ -36,24 +36,24 @@
 
 <div class="activate-page safe-area-top safe-area-bottom">
   <div class="header">
-    <h1>Activate Device</h1>
-    <p class="text-secondary">Sign in with your FlowBin account</p>
+    <h1>{$t('auth.activate.title')}</h1>
+    <p class="text-secondary">{$t('auth.activate.subtitle')}</p>
   </div>
 
   {#if !apiConfigured}
     <div class="warning-message">
-      <p>API not configured. Please set VITE_FLOWBIN_API_URL in your environment.</p>
+      <p>{$t('auth.activate.api_not_configured')}</p>
     </div>
   {/if}
 
   <form on:submit|preventDefault={handleSubmit}>
     <div class="field">
-      <label for="email">Email</label>
+      <label for="email">{$t('auth.activate.email')}</label>
       <input
         id="email"
         type="email"
         bind:value={email}
-        placeholder="your@email.com"
+        placeholder={$t('auth.activate.email.placeholder')}
         autocomplete="email"
         disabled={loading || !apiConfigured}
         required
@@ -61,12 +61,12 @@
     </div>
 
     <div class="field">
-      <label for="password">Password</label>
+      <label for="password">{$t('auth.activate.password')}</label>
       <input
         id="password"
         type="password"
         bind:value={password}
-        placeholder="Enter password"
+        placeholder={$t('auth.activate.password.placeholder')}
         autocomplete="current-password"
         disabled={loading || !apiConfigured}
         required
@@ -74,14 +74,23 @@
     </div>
 
     <div class="field">
-      <label for="deviceName">Device Name <span class="optional">(optional)</span></label>
-      <input
-        id="deviceName"
-        type="text"
-        bind:value={deviceName}
-        placeholder="Warehouse Tablet #3"
-        disabled={loading || !apiConfigured}
-      />
+      <label>{$t('auth.activate.language')}</label>
+      <div class="language-toggle">
+        <button
+          type="button"
+          class:active={$locale === 'pt'}
+          on:click={() => setLocale('pt')}
+        >
+          Português
+        </button>
+        <button
+          type="button"
+          class:active={$locale === 'en'}
+          on:click={() => setLocale('en')}
+        >
+          English
+        </button>
+      </div>
     </div>
 
     {#if error}
@@ -89,16 +98,16 @@
     {/if}
 
     <Button type="submit" disabled={loading || !apiConfigured} {loading}>
-      {loading ? 'Activating...' : 'Activate Device'}
+      {loading ? $t('auth.activate.activating') : $t('auth.activate.button')}
     </Button>
   </form>
 
   <div class="footer">
     <p class="text-secondary">
-      This will clear any existing local data.
+      {$t('auth.activate.clear_data_warning')}
     </p>
     <p class="text-secondary">
-      Don't have an account? Contact your administrator.
+      {$t('auth.activate.no_account')}
     </p>
   </div>
 </div>
@@ -138,10 +147,6 @@
   .field label {
     font-size: var(--font-size-secondary);
     color: var(--color-text-secondary);
-  }
-
-  .field .optional {
-    font-weight: normal;
   }
 
   .field input {
@@ -195,5 +200,39 @@
 
   .footer p {
     margin-bottom: var(--space-sm);
+  }
+
+  .language-toggle {
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  .language-toggle button {
+    flex: 1;
+    height: var(--button-height);
+    padding: 0 var(--space-md);
+    background: var(--color-bg-card);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-input);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-body);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .language-toggle button.active {
+    background: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+    color: #0f172a;
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .language-toggle button:not(.active):hover {
+    border-color: var(--color-accent-primary);
+    color: var(--color-text-primary);
+  }
+
+  .language-toggle button:not(.active):active {
+    background: var(--color-bg-input);
   }
 </style>

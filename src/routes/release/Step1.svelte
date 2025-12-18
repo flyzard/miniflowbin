@@ -4,6 +4,7 @@
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { releaseFlow, canSelectSource } from '../../lib/stores/releaseFlow';
   import { listProductsWithInventory } from '../../lib/repositories/productRepo';
+  import { t } from '../../lib/i18n';
   import type { Product } from '../../lib/types';
 
   // Local state for async data
@@ -45,15 +46,15 @@
   $: selectedProductInventory = productsWithInventory.find(p => p.id === $releaseFlow.product?.id);
 </script>
 
-<PageLayout title="Release Inventory">
+<PageLayout title={$t('release.title')}>
   <BackNav slot="nav" href="/" />
-  <StepIndicator currentStep={1} totalSteps={3} stepName="Select product" />
+  <StepIndicator currentStep={1} totalSteps={3} stepName={$t('release.step1.name')} />
 
   <div class="form-section">
     <SearchDropdown
-      label="Product"
-      placeholder="Select a product with inventory..."
-      searchPlaceholder="Search by name or SKU..."
+      label={$t('form.product')}
+      placeholder={$t('form.product.placeholder_inventory')}
+      searchPlaceholder={$t('form.product.search')}
       items={productsWithInventory}
       value={selectedProductInventory}
       displayFn={(p) => p.name || p.sku}
@@ -64,7 +65,7 @@
   </div>
 
   <Button disabled={!canProceed} on:click={handleContinue}>
-    Continue
+    {$t('common.continue')}
   </Button>
 </PageLayout>
 

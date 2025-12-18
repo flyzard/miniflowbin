@@ -49,12 +49,13 @@
 
   .btn-primary {
     background: var(--color-accent-primary);
-    color: var(--color-bg-primary);
+    color: #0f172a;
     border: none;
+    font-weight: var(--font-weight-semibold);
   }
 
   .btn-primary:not(:disabled):hover {
-    opacity: 0.9;
+    box-shadow: 0 4px 16px rgba(20, 184, 166, 0.35);
   }
 
   .btn-primary:not(:disabled):active {

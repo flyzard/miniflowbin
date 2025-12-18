@@ -6,6 +6,7 @@
   import { receiveFlow, canConfirmReceive } from '../../lib/stores/receiveFlow';
   import { searchProducts } from '../../lib/repositories/productRepo';
   import { listPositions } from '../../lib/repositories/positionRepo';
+  import { t } from '../../lib/i18n';
   import type { Product, StoragePosition } from '../../lib/types';
 
   // Local state for async data
@@ -51,15 +52,15 @@
   }
 </script>
 
-<PageLayout title="Receive Inventory">
+<PageLayout title={$t('receive.title')}>
   <BackNav slot="nav" href="/" />
-  <StepIndicator currentStep={1} totalSteps={2} stepName="Enter details" />
+  <StepIndicator currentStep={1} totalSteps={2} stepName={$t('receive.step1.name')} />
 
   <div class="form-section">
     <SearchDropdown
-      label="Product"
-      placeholder="Select a product..."
-      searchPlaceholder="Search by name or SKU..."
+      label={$t('form.product')}
+      placeholder={$t('form.product.placeholder')}
+      searchPlaceholder={$t('form.product.search')}
       items={products}
       value={$receiveFlow.product}
       displayFn={(p) => p.name || p.sku}
@@ -69,7 +70,7 @@
     />
 
     <QuantityInput
-      label="Quantity"
+      label={$t('form.quantity')}
       value={$receiveFlow.quantity}
       min={1}
       max={999999}
@@ -78,7 +79,7 @@
     />
 
     <PositionSelector
-      label="Storage Position"
+      label={$t('form.position')}
       positions={positions}
       value={$receiveFlow.position}
       required={true}
@@ -87,7 +88,7 @@
   </div>
 
   <Button disabled={!canProceed} on:click={handleContinue}>
-    Continue
+    {$t('common.continue')}
   </Button>
 </PageLayout>
 

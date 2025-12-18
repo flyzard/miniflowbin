@@ -31,6 +31,7 @@ const initialState: AuthStoreState = {
   lastDataSyncAt: null,
   // Transaction sync status (upload)
   pendingTransactionCount: 0,
+  rejectedTransactionCount: 0,
   isUploadingSyncing: false,
   uploadSyncError: null,
   lastUploadSyncAt: null,
@@ -220,6 +221,10 @@ function createAuthStore() {
         ...state,
         pendingTransactionCount: Math.max(0, state.pendingTransactionCount - by)
       }));
+    },
+
+    setRejectedTransactionCount: (count: number) => {
+      update(state => ({ ...state, rejectedTransactionCount: count }));
     },
 
     setUploadSyncing: (isUploadingSyncing: boolean) => {
@@ -423,4 +428,28 @@ export const isUploadingSyncing = derived(
 export const uploadSyncError = derived(
   authStore,
   $auth => $auth.uploadSyncError
+);
+
+/**
+ * Rejected transaction count
+ */
+export const rejectedTransactionCount = derived(
+  authStore,
+  $auth => $auth.rejectedTransactionCount
+);
+
+/**
+ * Has rejected transactions
+ */
+export const hasRejectedTransactions = derived(
+  authStore,
+  $auth => $auth.rejectedTransactionCount > 0
+);
+
+/**
+ * Has any sync errors (data sync, upload, or rejected transactions)
+ */
+export const hasSyncErrors = derived(
+  authStore,
+  $auth => !!$auth.dataSyncError || !!$auth.uploadSyncError || $auth.rejectedTransactionCount > 0
 );
