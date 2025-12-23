@@ -3,7 +3,7 @@
  * Based on PRD Section 8: Data Model
  */
 
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * SQL statements to create all tables
@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS products (
   color TEXT,
   size TEXT,
   unit_of_measure TEXT NOT NULL DEFAULT 'EA',
+  barcode TEXT,
   distribution_center_id TEXT NOT NULL,
   is_active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
@@ -75,6 +76,7 @@ CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);
 CREATE INDEX IF NOT EXISTS idx_products_dc ON products(distribution_center_id);
 CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);
 CREATE INDEX IF NOT EXISTS idx_products_search ON products(name COLLATE NOCASE, sku COLLATE NOCASE);
+CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
 
 -- Storage Positions
 CREATE TABLE IF NOT EXISTS storage_positions (

@@ -39,6 +39,7 @@ export interface Product {
   color: string | null;
   size: string | null;
   unit_of_measure: string;
+  barcode: string | null;
   distribution_center_id: string;
   is_active: boolean;
   created_at: string;

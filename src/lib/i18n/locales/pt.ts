@@ -134,4 +134,14 @@ export default {
   'sync.rejected.reason': 'Motivo: {error}',
   'sync.rejected.type.RECEIVE': 'Recebimento',
   'sync.rejected.type.RELEASE': 'Liberação',
+
+  // Barcode Scanning
+  'barcode.scan': 'Escanear Codigo de Barras',
+  'barcode.looking_up': 'Buscando produto...',
+  'barcode.not_found': 'Nenhum produto encontrado para codigo: {barcode}',
+  'barcode.lookup_error': 'Falha ao buscar codigo de barras',
+  'barcode.camera_not_available': 'Camera nao disponivel',
+  'barcode.manual_hint': 'Use um leitor de codigo de barras ou digite manualmente',
+  'barcode.point_camera': 'Aponte a camera para o codigo de barras',
+  'barcode.retry': 'Tentar novamente',
 } as const;

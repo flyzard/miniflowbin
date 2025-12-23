@@ -74,7 +74,7 @@
     </div>
 
     <div class="field">
-      <label>{$t('auth.activate.language')}</label>
+      <div class="field-label">{$t('auth.activate.language')}</div>
       <div class="language-toggle">
         <button
           type="button"
@@ -144,7 +144,8 @@
     gap: var(--space-xs);
   }
 
-  .field label {
+  .field label,
+  .field .field-label {
     font-size: var(--font-size-secondary);
     color: var(--color-text-secondary);
   }

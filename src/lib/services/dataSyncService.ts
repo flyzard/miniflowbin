@@ -173,6 +173,7 @@ async function syncToDatabase(
             color: p.color,
             size: p.size,
             unit_of_measure: p.unit_of_measure,
+            barcode: p.barcode,
             distribution_center_id: dcId,
           }))
         );

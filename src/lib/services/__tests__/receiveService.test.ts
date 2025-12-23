@@ -50,6 +50,7 @@ describe('receiveService', () => {
       color: null,
       size: null,
       unit_of_measure: 'units',
+      barcode: null,
       distribution_center_id: 'dc-1',
       is_active: true,
       created_at: '2025-12-01T00:00:00Z',

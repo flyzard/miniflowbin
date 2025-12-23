@@ -134,4 +134,14 @@ export default {
   'sync.rejected.reason': 'Reason: {error}',
   'sync.rejected.type.RECEIVE': 'Receive',
   'sync.rejected.type.RELEASE': 'Release',
+
+  // Barcode Scanning
+  'barcode.scan': 'Scan Barcode',
+  'barcode.looking_up': 'Looking up product...',
+  'barcode.not_found': 'No product found for barcode: {barcode}',
+  'barcode.lookup_error': 'Failed to look up barcode',
+  'barcode.camera_not_available': 'Camera not available',
+  'barcode.manual_hint': 'Use a hardware scanner or enter barcode manually',
+  'barcode.point_camera': 'Point camera at barcode',
+  'barcode.retry': 'Retry',
 } as const;

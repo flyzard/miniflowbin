@@ -146,6 +146,7 @@ export interface SyncProduct {
   color?: string;
   size?: string;
   unit_of_measure: string;
+  barcode?: string;
 }
 
 export interface SyncStoragePosition {

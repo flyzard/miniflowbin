@@ -1,6 +1,7 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, SearchDropdown, Button, PageLayout } from '../../lib/components';
+  import { BackNav, StepIndicator, Button, PageLayout } from '../../lib/components';
+  import ProductSearchWithBarcode from '../../lib/components/ProductSearchWithBarcode.svelte';
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { releaseFlow, canSelectSource } from '../../lib/stores/releaseFlow';
   import { listProductsWithInventory } from '../../lib/repositories/productRepo';
@@ -51,14 +52,13 @@
   <StepIndicator currentStep={1} totalSteps={3} stepName={$t('release.step1.name')} />
 
   <div class="form-section">
-    <SearchDropdown
+    <ProductSearchWithBarcode
       label={$t('form.product')}
       placeholder={$t('form.product.placeholder_inventory')}
       searchPlaceholder={$t('form.product.search')}
-      items={productsWithInventory}
+      products={productsWithInventory}
       value={selectedProductInventory}
-      displayFn={(p) => p.name || p.sku}
-      secondaryFn={(p) => [p.name ? p.sku : null, p.color, p.size, `${p.total_quantity} available`].filter(Boolean).join(' • ')}
+      distributionCenterId={dcId}
       required={true}
       on:select={handleProductSelect}
     />

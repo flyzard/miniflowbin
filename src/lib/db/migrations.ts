@@ -193,6 +193,15 @@ export async function runMigrations(): Promise<void> {
         version = 5;
         await recordVersion(5);
       }
+
+      // Migration v5 -> v6: Add barcode column to products for barcode scanning
+      if (version === 5) {
+        console.log('[Migrations] Running migration v5 -> v6: Add barcode to products');
+        await addColumnIfNotExists('products', 'barcode', 'TEXT');
+        await exec('CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode)');
+        version = 6;
+        await recordVersion(6);
+      }
     }
 
     console.log('[Migrations] Schema upgrade complete');

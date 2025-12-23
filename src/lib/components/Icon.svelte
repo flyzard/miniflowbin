@@ -4,7 +4,8 @@
     | 'chevron-left' | 'chevron-down'
     | 'check' | 'check-circle' | 'x' | 'x-circle'
     | 'search' | 'map-pin' | 'package' | 'plus' | 'hash' | 'user' | 'calendar'
-    | 'alert-triangle' | 'info-circle';
+    | 'alert-triangle' | 'info-circle'
+    | 'barcode';
 
   type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -88,5 +89,13 @@
     <circle cx="12" cy="12" r="10"/>
     <line x1="12" y1="16" x2="12" y2="12"/>
     <line x1="12" y1="8" x2="12.01" y2="8"/>
+  {:else if name === 'barcode'}
+    <path d="M3 5v14"/>
+    <path d="M6 5v14"/>
+    <path d="M9 5v14"/>
+    <path d="M13 5v14"/>
+    <path d="M16 5v14"/>
+    <path d="M19 5v14"/>
+    <path d="M21 5v14"/>
   {/if}
 </svg>

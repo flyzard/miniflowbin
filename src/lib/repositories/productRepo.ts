@@ -17,7 +17,23 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 /**
- * Search products by name or SKU
+ * Get a product by barcode (exact match, case-insensitive)
+ */
+export async function getProductByBarcode(
+  barcode: string,
+  distributionCenterId: string
+): Promise<Product | null> {
+  return await queryOne<Product>(
+    `SELECT * FROM products
+     WHERE barcode = ? COLLATE NOCASE
+       AND distribution_center_id = ?
+       AND is_active = 1`,
+    [barcode, distributionCenterId]
+  );
+}
+
+/**
+ * Search products by name, SKU, or barcode
  */
 export async function searchProducts(searchTerm: string, distributionCenterId: string, limit: number = 50): Promise<Product[]> {
   const term = `%${searchTerm}%`;
@@ -27,14 +43,16 @@ export async function searchProducts(searchTerm: string, distributionCenterId: s
     `SELECT * FROM products
      WHERE distribution_center_id = ?
        AND is_active = 1
-       AND (name LIKE ? COLLATE NOCASE OR sku LIKE ? COLLATE NOCASE)
+       AND (name LIKE ? COLLATE NOCASE OR sku LIKE ? COLLATE NOCASE OR barcode LIKE ? COLLATE NOCASE)
      ORDER BY
-       CASE WHEN sku LIKE ? COLLATE NOCASE THEN 0 ELSE 1 END,
+       CASE WHEN barcode = ? COLLATE NOCASE THEN 0
+            WHEN sku LIKE ? COLLATE NOCASE THEN 1
+            ELSE 2 END,
        name
      ${hasSearch ? 'LIMIT ?' : ''}`,
     hasSearch
-      ? [distributionCenterId, term, term, term, limit]
-      : [distributionCenterId, term, term, term]
+      ? [distributionCenterId, term, term, term, searchTerm, term, limit]
+      : [distributionCenterId, term, term, term, searchTerm, term]
   );
 }
 
@@ -87,6 +105,7 @@ export async function upsertProducts(products: Array<{
   color?: string;
   size?: string;
   unit_of_measure: string;
+  barcode?: string;
   distribution_center_id: string;
 }>): Promise<void> {
   if (products.length === 0) return;
@@ -95,7 +114,7 @@ export async function upsertProducts(products: Array<{
 
   const columns = [
     'id', 'sku', 'name', 'description', 'category', 'color', 'size',
-    'unit_of_measure', 'distribution_center_id', 'is_active', 'created_at', 'updated_at'
+    'unit_of_measure', 'barcode', 'distribution_center_id', 'is_active', 'created_at', 'updated_at'
   ];
 
   const rows = products.map(p => [
@@ -107,6 +126,7 @@ export async function upsertProducts(products: Array<{
     p.color ?? null,
     p.size ?? null,
     p.unit_of_measure,
+    p.barcode ?? null,
     p.distribution_center_id,
     1,
     timestamp,
@@ -121,6 +141,7 @@ export async function upsertProducts(products: Array<{
     color = excluded.color,
     size = excluded.size,
     unit_of_measure = excluded.unit_of_measure,
+    barcode = excluded.barcode,
     is_active = 1,
     updated_at = excluded.updated_at`;
 
