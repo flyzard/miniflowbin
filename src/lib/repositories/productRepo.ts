@@ -21,6 +21,8 @@ export async function getProductById(id: string): Promise<Product | null> {
  */
 export async function searchProducts(searchTerm: string, distributionCenterId: string, limit: number = 50): Promise<Product[]> {
   const term = `%${searchTerm}%`;
+  const hasSearch = searchTerm.trim().length > 0;
+
   return await query<Product>(
     `SELECT * FROM products
      WHERE distribution_center_id = ?
@@ -29,8 +31,10 @@ export async function searchProducts(searchTerm: string, distributionCenterId: s
      ORDER BY
        CASE WHEN sku LIKE ? COLLATE NOCASE THEN 0 ELSE 1 END,
        name
-     LIMIT ?`,
-    [distributionCenterId, term, term, term, limit]
+     ${hasSearch ? 'LIMIT ?' : ''}`,
+    hasSearch
+      ? [distributionCenterId, term, term, term, limit]
+      : [distributionCenterId, term, term, term]
   );
 }
 

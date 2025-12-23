@@ -250,7 +250,9 @@ export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
 
   // On web, sql.js handles transactions differently - just run the function
   // and save to store afterward. The execute() method handles atomicity for DDL.
+  // Set inTransaction flag so parallel exec() calls don't each start implicit transactions.
   if (platform === 'web') {
+    inTransaction = true;
     try {
       const result = await fn();
       await saveToStore();
@@ -263,6 +265,8 @@ export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
         // Ignore save errors during error handling
       }
       throw error;
+    } finally {
+      inTransaction = false;
     }
   }
 
