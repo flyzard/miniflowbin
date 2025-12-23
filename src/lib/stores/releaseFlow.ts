@@ -1,7 +1,7 @@
 /**
  * Release Flow Store
  *
- * Manages state for the release inventory wizard (full batch release only)
+ * Manages state for the release inventory wizard
  */
 
 import { writable } from 'svelte/store';
@@ -11,7 +11,8 @@ const initial: ReleaseFlowState = {
   product: null,
   sourceBatch: null,
   sourcePosition: null,
-  destinationPosition: null
+  destinationPosition: null,
+  quantity: null
 };
 
 export const releaseFlow = writable<ReleaseFlowState>(initial);
@@ -25,7 +26,13 @@ export function canSelectSource(s: ReleaseFlowState): boolean {
 }
 
 export function canSelectDestination(s: ReleaseFlowState): boolean {
-  return s.sourceBatch !== null && s.sourcePosition !== null;
+  return (
+    s.sourceBatch !== null &&
+    s.sourcePosition !== null &&
+    s.quantity !== null &&
+    s.quantity >= 1 &&
+    s.quantity <= s.sourceBatch.quantity
+  );
 }
 
 export function canConfirmRelease(s: ReleaseFlowState): boolean {
@@ -33,5 +40,13 @@ export function canConfirmRelease(s: ReleaseFlowState): boolean {
 }
 
 export function effectiveQuantity(s: ReleaseFlowState): number {
+  if (s.quantity !== null && s.quantity > 0) {
+    return s.quantity;
+  }
   return s.sourceBatch?.quantity ?? 0;
+}
+
+export function isPartialRelease(s: ReleaseFlowState): boolean {
+  if (!s.sourceBatch || s.quantity === null) return false;
+  return s.quantity < s.sourceBatch.quantity;
 }

@@ -49,6 +49,9 @@ export default {
   'release.fifo_hint': 'Oldest batches shown first (FIFO)',
   'release.success': 'Released {quantity} units of {name}',
   'release.quantity_full_batch': '{quantity} (full batch)',
+  'release.quantity_partial': '{quantity} of {total} (partial)',
+  'release.quantity_label': 'Quantity to Release',
+  'release.quantity_hint': 'Max: {max} units available',
 
   // Movement labels
   'movement.from': 'From',

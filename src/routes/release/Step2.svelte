@@ -1,6 +1,6 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router';
-  import { BackNav, StepIndicator, PositionCard, Button, EmptyState, PageLayout } from '../../lib/components';
+  import { BackNav, StepIndicator, PositionCard, Button, EmptyState, PageLayout, QuantityInput } from '../../lib/components';
   import { releaseFlow, canSelectDestination } from '../../lib/stores/releaseFlow';
   import { listBatchesWithDetails } from '../../lib/repositories/batchRepo';
   import { getPositionById } from '../../lib/repositories/positionRepo';
@@ -13,6 +13,8 @@
   let autoSelectDone = false;
 
   $: canProceed = canSelectDestination($releaseFlow);
+  $: maxQuantity = $releaseFlow.sourceBatch?.quantity ?? 0;
+  $: releaseQuantity = $releaseFlow.quantity ?? maxQuantity;
 
   // Load batches when product changes
   $: if ($releaseFlow.product) {
@@ -43,9 +45,15 @@
       releaseFlow.update(s => ({
         ...s,
         sourceBatch: batch,
-        sourcePosition: position
+        sourcePosition: position,
+        quantity: batch.quantity
       }));
     }
+  }
+
+  function handleQuantityChange(event: CustomEvent<number>) {
+    const qty = Math.max(1, Math.min(event.detail, maxQuantity));
+    releaseFlow.update(s => ({ ...s, quantity: qty }));
   }
 
   function handleContinue() {
@@ -62,7 +70,11 @@
   {#if $releaseFlow.product}
     <p class="product-info">
       {$t('release.picking')} <strong>{$releaseFlow.product.name}</strong>
-      <span class="quantity-badge">{$t('release.full_batch')}</span>
+      {#if $releaseFlow.sourceBatch}
+        <span class="quantity-badge">
+          {$releaseFlow.quantity ?? $releaseFlow.sourceBatch.quantity} / {$releaseFlow.sourceBatch.quantity}
+        </span>
+      {/if}
     </p>
   {/if}
 
@@ -81,11 +93,26 @@
           receivedDate={batch.received_at}
           isOldest={index === 0}
           selected={$releaseFlow.sourceBatch?.id === batch.id}
-          willMoveFullBatch={true}
+          willMoveFullBatch={$releaseFlow.sourceBatch?.id === batch.id && $releaseFlow.quantity === batch.quantity}
           on:select={() => handleBatchSelect(batch)}
         />
       {/each}
     </div>
+
+    {#if $releaseFlow.sourceBatch}
+      <div class="quantity-section">
+        <QuantityInput
+          label={$t('release.quantity_label')}
+          value={releaseQuantity}
+          min={1}
+          max={maxQuantity}
+          on:change={handleQuantityChange}
+        />
+        <p class="quantity-hint">
+          {$t('release.quantity_hint', { max: maxQuantity })}
+        </p>
+      </div>
+    {/if}
   {/if}
 
   <Button disabled={!canProceed} on:click={handleContinue}>
@@ -124,6 +151,19 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  .quantity-section {
     margin-bottom: var(--space-lg);
+    padding: var(--space-md);
+    background: var(--color-bg-card);
+    border-radius: var(--radius-card);
+  }
+
+  .quantity-hint {
+    font-size: var(--font-size-caption);
+    color: var(--color-text-secondary);
+    margin-top: var(--space-xs);
   }
 </style>

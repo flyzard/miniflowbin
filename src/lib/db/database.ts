@@ -38,30 +38,44 @@ let inTransaction = false;
 async function initWebSQLite(): Promise<void> {
   console.log('[DB] Initializing web SQLite with jeep-sqlite...');
 
-  // Define custom elements FIRST (before any element exists in DOM)
+  // Define custom elements - this registers the 'jeep-sqlite' tag
+  // The element already exists in index.html with wasmPath configured
   await jeepSqlite(window);
 
   // Wait for the custom element to be defined
   await customElements.whenDefined('jeep-sqlite');
 
-  // Create the element dynamically AFTER custom element is defined
-  let jeepEl = document.querySelector('jeep-sqlite');
+  // Get the pre-existing element from DOM
+  const jeepEl = document.querySelector('jeep-sqlite');
   if (!jeepEl) {
-    jeepEl = document.createElement('jeep-sqlite');
-    document.body.appendChild(jeepEl);
+    throw new Error('jeep-sqlite element not found in DOM. Add <jeep-sqlite> to index.html');
   }
-
-  // Configure WASM file location
-  jeepEl.setAttribute('wasmPath', '/assets');
 
   // Wait for the component to be ready (hydrated)
   await new Promise<void>((resolve) => {
-    if ((jeepEl as any).componentOnReady) {
-      (jeepEl as any).componentOnReady().then(() => resolve());
-    } else {
-      // Fallback: wait a tick for the component to initialize
-      requestAnimationFrame(() => resolve());
-    }
+    const timeout = setTimeout(() => {
+      console.warn('[DB] jeep-sqlite componentOnReady timeout, proceeding anyway');
+      resolve();
+    }, 5000);
+
+    const checkReady = () => {
+      if ((jeepEl as any).componentOnReady) {
+        (jeepEl as any).componentOnReady()
+          .then(() => {
+            clearTimeout(timeout);
+            resolve();
+          })
+          .catch((err: Error) => {
+            clearTimeout(timeout);
+            console.warn('[DB] componentOnReady error:', err);
+            resolve(); // Still try to proceed
+          });
+      } else {
+        // Component not ready yet, try again
+        requestAnimationFrame(checkReady);
+      }
+    };
+    checkReady();
   });
 
   // Initialize IndexedDB store
@@ -86,15 +100,9 @@ export async function initDatabase(): Promise<void> {
   if (platform === 'web') {
     // Web requires jeep-sqlite initialization
     await initWebSQLite();
-  } else if (platform === 'ios' || platform === 'android') {
-    // Request permissions for native platforms
-    try {
-      const result = await CapacitorSQLite.requestPermissions();
-      console.log('[DB] Permissions result:', result);
-    } catch (error) {
-      console.error('[DB] Error requesting permissions:', error);
-    }
   }
+  // Note: Native platforms (Android/iOS) no longer require explicit permission requests
+  // in @capacitor-community/sqlite v7+
 
   // Check connection consistency
   const retCC = (await sqlite.checkConnectionsConsistency()).result;
@@ -121,6 +129,9 @@ export async function initDatabase(): Promise<void> {
     await db.query('PRAGMA synchronous = NORMAL;', []);
     await db.query('PRAGMA foreign_keys = ON;', []);
     await db.query('PRAGMA cache_size = -2000;', []);
+    // Bulk operation optimizations
+    await db.query('PRAGMA temp_store = MEMORY;', []);   // Store temp tables in RAM
+    await db.query('PRAGMA mmap_size = 30000000;', []);  // 30MB memory-mapped I/O
     console.log('[DB] PRAGMAs configured successfully');
   } catch (error) {
     // PRAGMAs are optional optimizations, log but don't fail
@@ -148,6 +159,41 @@ function getDatabase(): SQLiteDBConnection {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }
   return db;
+}
+
+/**
+ * Execute a bulk INSERT with ON CONFLICT handling
+ * Chunks data into batches to respect SQLite parameter limits (max 999)
+ *
+ * @param table - Table name to insert into
+ * @param columns - Column names in insertion order
+ * @param rows - Array of value arrays, each matching columns order
+ * @param onConflict - ON CONFLICT clause without the "ON CONFLICT" prefix, e.g., "(id) DO UPDATE SET name = excluded.name"
+ * @param batchSize - Number of rows per INSERT statement (default 50)
+ */
+export async function execBulkUpsert(
+  table: string,
+  columns: string[],
+  rows: unknown[][],
+  onConflict: string,
+  batchSize: number = 70
+): Promise<void> {
+  if (rows.length === 0) return;
+
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const chunk = rows.slice(i, i + batchSize);
+
+    // Build VALUES placeholders: (?, ?, ?), (?, ?, ?), ...
+    const valuePlaceholder = `(${columns.map(() => '?').join(', ')})`;
+    const valuesClause = chunk.map(() => valuePlaceholder).join(', ');
+
+    // Flatten parameters: [[1,'a'], [2,'b']] → [1,'a',2,'b']
+    const params = chunk.flat();
+
+    const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${valuesClause} ON CONFLICT${onConflict}`;
+
+    await exec(sql, params);
+  }
 }
 
 /**
@@ -247,5 +293,32 @@ export async function transaction<T>(fn: () => Promise<T>): Promise<T> {
   } finally {
     // Always reset flag
     inTransaction = false;
+  }
+}
+
+/**
+ * Disable WAL auto-checkpoint for bulk operations
+ * Call before large sync operations to reduce disk I/O
+ */
+export async function disableWalAutoCheckpoint(): Promise<void> {
+  const database = getDatabase();
+  try {
+    await database.query('PRAGMA wal_autocheckpoint = 0;', []);
+  } catch (error) {
+    console.warn('[DB] Failed to disable WAL auto-checkpoint:', error);
+  }
+}
+
+/**
+ * Restore WAL auto-checkpoint and perform manual checkpoint
+ * Call after large sync operations complete
+ */
+export async function restoreWalCheckpoint(): Promise<void> {
+  const database = getDatabase();
+  try {
+    await database.query('PRAGMA wal_checkpoint(PASSIVE);', []);
+    await database.query('PRAGMA wal_autocheckpoint = 1000;', []);
+  } catch (error) {
+    console.warn('[DB] Failed to restore WAL checkpoint:', error);
   }
 }

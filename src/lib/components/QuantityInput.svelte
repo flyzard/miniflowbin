@@ -14,30 +14,57 @@
   // Generate unique ID for accessibility
   const id = `qty-${Math.random().toString(36).slice(2, 9)}`;
 
+  // Use string for display to allow empty input while typing
+  let inputValue: string = String(value);
+
+  // Track the last value we synced from props to avoid overwriting user input
+  let lastSyncedValue = value;
+
+  // Only sync when value prop changes externally (not from our own updates)
+  $: if (value !== lastSyncedValue) {
+    lastSyncedValue = value;
+    inputValue = String(value);
+  }
+
   function increment() {
     if (disabled || value >= max) return;
     value = Math.min(value + step, max);
+    lastSyncedValue = value;
+    inputValue = String(value);
     dispatch('change', value);
   }
 
   function decrement() {
     if (disabled || value <= min) return;
     value = Math.max(value - step, min);
+    lastSyncedValue = value;
+    inputValue = String(value);
     dispatch('change', value);
   }
 
   function handleInput(e: Event) {
     const target = e.target as HTMLInputElement;
-    let newValue = parseInt(target.value) || min;
-    newValue = Math.max(min, Math.min(max, newValue));
-    value = newValue;
-    dispatch('change', value);
+    // Filter to only allow digits
+    const digitsOnly = target.value.replace(/[^0-9]/g, '');
+    inputValue = digitsOnly;
+    // Update the input element if we filtered characters
+    if (target.value !== digitsOnly) {
+      target.value = digitsOnly;
+    }
   }
 
   function handleBlur() {
-    // Ensure value is valid on blur
-    if (value < min) value = min;
-    if (value > max) value = max;
+    // Validate and clamp on blur
+    let newValue = parseInt(inputValue);
+    if (isNaN(newValue) || newValue < min) {
+      newValue = min;
+    } else if (newValue > max) {
+      newValue = max;
+    }
+    value = newValue;
+    lastSyncedValue = value;
+    inputValue = String(value);
+    dispatch('change', value);
   }
 </script>
 
@@ -60,14 +87,13 @@
     </button>
 
     <input
-      type="number"
+      type="text"
+      inputmode="numeric"
+      pattern="[0-9]*"
       {id}
       class="input"
-      {min}
-      {max}
-      {step}
       {disabled}
-      bind:value
+      bind:value={inputValue}
       on:input={handleInput}
       on:blur={handleBlur}
     />

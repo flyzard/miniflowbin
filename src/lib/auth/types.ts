@@ -184,6 +184,13 @@ export type DataSyncResult =
   | { success: true; productCount: number; positionCount: number; batchCount?: number }
   | { success: false; error: string };
 
+/** Progress callback for sync operations */
+export type SyncProgress = {
+  phase: 'preparing' | 'deactivate' | 'products' | 'positions' | 'batches' | 'finalizing' | 'complete';
+  percent: number;
+  message: string;
+};
+
 // ============================================================================
 // Transaction Sync Types (bidirectional sync)
 // ============================================================================

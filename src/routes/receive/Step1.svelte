@@ -5,7 +5,7 @@
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { receiveFlow, canConfirmReceive } from '../../lib/stores/receiveFlow';
   import { searchProducts } from '../../lib/repositories/productRepo';
-  import { listPositions } from '../../lib/repositories/positionRepo';
+  import { listReceivablePositions } from '../../lib/repositories/positionRepo';
   import { t } from '../../lib/i18n';
   import type { Product, StoragePosition } from '../../lib/types';
 
@@ -24,7 +24,7 @@
     try {
       [products, positions] = await Promise.all([
         searchProducts('', distributionCenterId, 100),
-        listPositions(distributionCenterId)
+        listReceivablePositions(distributionCenterId)
       ]);
     } catch (error) {
       console.error('Failed to load data:', error);

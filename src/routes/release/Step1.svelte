@@ -43,7 +43,7 @@
   }
 
   // Get selected product for display
-  $: selectedProductInventory = productsWithInventory.find(p => p.id === $releaseFlow.product?.id);
+  $: selectedProductInventory = productsWithInventory.find(p => p.id === $releaseFlow.product?.id) ?? null;
 </script>
 
 <PageLayout title={$t('release.title')}>

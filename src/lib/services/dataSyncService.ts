@@ -15,7 +15,7 @@
 
 import { getDecryptedDeviceToken } from '../auth/deviceService';
 import { getPrimaryAuthUser } from '../auth/authRepository';
-import { transaction } from '../db/database';
+import { transaction, disableWalAutoCheckpoint, restoreWalCheckpoint } from '../db/database';
 import * as settingsRepo from '../repositories/settingsRepo';
 import * as productRepo from '../repositories/productRepo';
 import * as positionRepo from '../repositories/positionRepo';
@@ -28,6 +28,7 @@ import type {
   TransactionSyncResponse,
   TransactionUploadResult,
   SyncInventoryBatch,
+  SyncProgress,
 } from '../auth/types';
 import { parseApiError } from '../utils/api';
 import type { Transaction } from '../types';
@@ -40,8 +41,11 @@ const API_BASE = import.meta.env.VITE_FLOWBIN_API_URL || '';
 
 /**
  * Fetch data from server and sync to local database
+ * @param onProgress - Optional callback for sync progress updates
  */
-export async function fetchAndSyncData(): Promise<DataSyncResult> {
+export async function fetchAndSyncData(
+  onProgress?: (progress: SyncProgress) => void
+): Promise<DataSyncResult> {
   console.log('[DataSync] Starting sync...');
   console.log('[DataSync] API_BASE:', API_BASE || '(not configured)');
 
@@ -50,6 +54,8 @@ export async function fetchAndSyncData(): Promise<DataSyncResult> {
   }
 
   try {
+    onProgress?.({ phase: 'preparing', percent: 5, message: 'Preparing sync...' });
+
     // Get decrypted device token for API authentication
     console.log('[DataSync] Getting device token...');
     const token = await getDecryptedDeviceToken();
@@ -93,14 +99,16 @@ export async function fetchAndSyncData(): Promise<DataSyncResult> {
     });
 
     // Sync data to local database within a transaction
-    await syncToDatabase(data);
+    await syncToDatabase(data, onProgress);
 
+    onProgress?.({ phase: 'complete', percent: 100, message: 'Sync complete' });
     console.log('[DataSync] Data sync complete');
 
     return {
       success: true,
       productCount: data.products.length,
-      positionCount: data.storage_positions.length
+      positionCount: data.storage_positions.length,
+      batchCount: data.inventory_batches?.length
     };
 
   } catch (error) {
@@ -118,67 +126,93 @@ export async function fetchAndSyncData(): Promise<DataSyncResult> {
 }
 
 /**
- * Sync data to local database
+ * Sync data to local database with optimized parallel operations
+ * @param data - Server response data
+ * @param onProgress - Optional progress callback
  */
-async function syncToDatabase(data: SyncResponse): Promise<void> {
+async function syncToDatabase(
+  data: SyncResponse,
+  onProgress?: (progress: SyncProgress) => void
+): Promise<void> {
   const dcId = String(data.distribution_center.id);
 
-  await transaction(async () => {
-    // 1. Upsert distribution center
-    await settingsRepo.upsertDistributionCenter({
-      id: dcId,
-      code: data.distribution_center.code,
-      name: data.distribution_center.name,
-      address: data.distribution_center.address,
-      timezone: data.distribution_center.timezone,
+  // Disable WAL auto-checkpoint for bulk operations (reduces I/O)
+  await disableWalAutoCheckpoint();
+
+  try {
+    await transaction(async () => {
+      // 1. Upsert distribution center
+      await settingsRepo.upsertDistributionCenter({
+        id: dcId,
+        code: data.distribution_center.code,
+        name: data.distribution_center.name,
+        address: data.distribution_center.address,
+        timezone: data.distribution_center.timezone,
+      });
+
+      onProgress?.({ phase: 'deactivate', percent: 15, message: 'Clearing old data...' });
+
+      // 2. Deactivate all entities in parallel (they're independent)
+      await Promise.all([
+        productRepo.deactivateProductsForDc(dcId),
+        positionRepo.deactivatePositionsForDc(dcId),
+        batchRepo.deactivateBatchesForDc(dcId),
+      ]);
+
+      onProgress?.({ phase: 'products', percent: 30, message: 'Syncing products...' });
+
+      // 3. Upsert products
+      if (data.products.length > 0) {
+        await productRepo.upsertProducts(
+          data.products.map(p => ({
+            id: String(p.id),
+            sku: p.sku,
+            name: p.name,
+            description: p.description,
+            category: p.category,
+            color: p.color,
+            size: p.size,
+            unit_of_measure: p.unit_of_measure,
+            distribution_center_id: dcId,
+          }))
+        );
+      }
+
+      onProgress?.({ phase: 'positions', percent: 55, message: 'Syncing positions...' });
+
+      // 4. Upsert positions
+      if (data.storage_positions.length > 0) {
+        await positionRepo.upsertPositions(
+          data.storage_positions.map(p => ({
+            id: String(p.id),
+            code: p.code,
+            zone: p.zone,
+            zone_type: p.zone_type,
+            description: p.description,
+            aisle: p.aisle,
+            rack: p.rack,
+            level: p.level,
+            distribution_center_id: dcId,
+          }))
+        );
+      }
+
+      // 5. Set selected distribution center
+      await settingsRepo.setSelectedDcId(dcId);
+
+      onProgress?.({ phase: 'batches', percent: 75, message: 'Syncing inventory...' });
+
+      // 6. Sync inventory batches if provided
+      if (data.inventory_batches && data.inventory_batches.length > 0) {
+        await syncInventoryBatchesInternal(data.inventory_batches, dcId);
+      }
+
+      onProgress?.({ phase: 'finalizing', percent: 95, message: 'Finalizing...' });
     });
-
-    // 2. Deactivate all products, then upsert from server
-    // (Soft delete preserves FK relationships with transactions)
-    await productRepo.deactivateProductsForDc(dcId);
-    if (data.products.length > 0) {
-      await productRepo.upsertProducts(
-        data.products.map(p => ({
-          id: String(p.id),
-          sku: p.sku,
-          name: p.name,
-          description: p.description,
-          category: p.category,
-          color: p.color,
-          size: p.size,
-          unit_of_measure: p.unit_of_measure,
-          distribution_center_id: dcId,
-        }))
-      );
-    }
-
-    // 3. Deactivate all positions, then upsert from server
-    // (Soft delete preserves FK relationships with batches/transactions)
-    await positionRepo.deactivatePositionsForDc(dcId);
-    if (data.storage_positions.length > 0) {
-      await positionRepo.upsertPositions(
-        data.storage_positions.map(p => ({
-          id: String(p.id),
-          code: p.code,
-          zone: p.zone,
-          zone_type: p.zone_type,
-          description: p.description,
-          aisle: p.aisle,
-          rack: p.rack,
-          level: p.level,
-          distribution_center_id: dcId,
-        }))
-      );
-    }
-
-    // 4. Set selected distribution center
-    await settingsRepo.setSelectedDcId(dcId);
-
-    // 5. Sync inventory batches if provided
-    if (data.inventory_batches && data.inventory_batches.length > 0) {
-      await syncInventoryBatchesInternal(data.inventory_batches, dcId);
-    }
-  });
+  } finally {
+    // Always restore WAL checkpoint (even on error)
+    await restoreWalCheckpoint();
+  }
 }
 
 // ============================================================================
@@ -422,6 +456,7 @@ export async function syncInventoryBatches(
 
 /**
  * Internal function to sync inventory batches within a transaction
+ * Note: Batch deactivation is now done in the parallel deactivate step of syncToDatabase
  */
 async function syncInventoryBatchesInternal(
   batches: SyncInventoryBatch[],
@@ -435,10 +470,8 @@ async function syncInventoryBatchesInternal(
   }
   const localUserId = localUser.id;
 
-  // Deactivate existing batches (soft delete preserves FK relationships)
-  await batchRepo.deactivateBatchesForDc(distributionCenterId);
-
   // Upsert batches from server (insert or update, marking as active)
+  // Note: Deactivation already done in parallel deactivate step
   if (batches.length > 0) {
     await batchRepo.upsertBatches(
       batches.map(b => ({

@@ -65,12 +65,6 @@
       <span class="badge badge-full">Will move entire batch</span>
     {/if}
   </div>
-
-  {#if selected}
-    <div class="selected-indicator">
-      <Icon name="check" size="md" />
-    </div>
-  {/if}
 </button>
 
 <style>
@@ -154,12 +148,5 @@
   .badge-full {
     color: var(--color-text-secondary);
     background: var(--color-bg-card);
-  }
-
-  .selected-indicator {
-    position: absolute;
-    top: var(--space-md);
-    right: var(--space-md);
-    color: var(--color-accent-success);
   }
 </style>

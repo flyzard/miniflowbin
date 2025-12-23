@@ -6,5 +6,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true
+  },
+  optimizeDeps: {
+    // Exclude Stencil components from pre-bundling to avoid runtime issues
+    exclude: ['jeep-sqlite']
   }
 });

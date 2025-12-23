@@ -4,7 +4,7 @@ export default {
   'home.subtitle': 'Selecione uma operação',
   'home.receive': 'Receber',
   'home.receive.description': 'Adicionar inventário ao armazém',
-  'home.release': 'Liberar',
+  'home.release': 'Libertar',
   'home.release.description': 'Retirar inventário',
 
   // Common
@@ -49,6 +49,9 @@ export default {
   'release.fifo_hint': 'Lotes mais antigos primeiro (FIFO)',
   'release.success': 'Liberado {quantity} unidades de {name}',
   'release.quantity_full_batch': '{quantity} (lote completo)',
+  'release.quantity_partial': '{quantity} de {total} (parcial)',
+  'release.quantity_label': 'Quantidade a Liberar',
+  'release.quantity_hint': 'Máx: {max} unidades disponíveis',
 
   // Movement labels
   'movement.from': 'De',

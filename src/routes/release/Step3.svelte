@@ -4,13 +4,15 @@
   import { showSuccess, showError } from '../../lib/stores/ui';
   import { selectedDc } from '../../lib/stores/distributionCenter';
   import { currentUser } from '../../lib/auth';
-  import { releaseFlow, resetReleaseFlow, effectiveQuantity } from '../../lib/stores/releaseFlow';
+  import { releaseFlow, resetReleaseFlow, effectiveQuantity, isPartialRelease } from '../../lib/stores/releaseFlow';
   import { executeRelease, resolveDestinationPosition } from '../../lib/services/releaseService';
   import { t } from '../../lib/i18n';
 
   let isSubmitting = false;
 
   $: qty = effectiveQuantity($releaseFlow);
+  $: partial = isPartialRelease($releaseFlow);
+  $: batchTotal = $releaseFlow.sourceBatch?.quantity ?? 0;
 
   // Auto-resolve destination position based on product SKU
   $: if ($releaseFlow.product && $selectedDc && !$releaseFlow.destinationPosition) {
@@ -36,7 +38,9 @@
     },
     {
       label: $t('form.quantity'),
-      value: $t('release.quantity_full_batch', { quantity: qty }),
+      value: partial
+        ? $t('release.quantity_partial', { quantity: qty, total: batchTotal })
+        : $t('release.quantity_full_batch', { quantity: qty }),
       icon: 'quantity' as const
     },
     {

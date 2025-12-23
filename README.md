@@ -815,3 +815,4 @@ Batch queries are sorted by `received_at ASC` to support First-In-First-Out pick
 bun run android:build
 bun run cap:sync
 bunx cap run android
+cd android && ./gradlew assembleDebug

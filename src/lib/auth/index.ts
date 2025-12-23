@@ -14,6 +14,7 @@ import { fetchAndSyncData, uploadPendingTransactions } from '../services/dataSyn
 import { refreshDistributionCenter } from '../stores/distributionCenter';
 import * as transactionRepo from '../repositories/transactionRepo';
 import * as settingsRepo from '../repositories/settingsRepo';
+import type { SyncProgress } from './types';
 
 // Re-export everything
 export * from './types';
@@ -160,8 +161,11 @@ async function initializePendingCount(): Promise<void> {
  * Perform data sync and update store status
  * Step 1: Upload pending transactions
  * Step 2: Download fresh data (products, positions, inventory)
+ * @param onProgress - Optional callback for sync progress updates
  */
-async function performDataSync(): Promise<void> {
+export async function performDataSync(
+  onProgress?: (progress: SyncProgress) => void
+): Promise<void> {
   authStore.setDataSyncing(true);
 
   // Get current DC ID
@@ -186,8 +190,8 @@ async function performDataSync(): Promise<void> {
     }
   }
 
-  // Step 2: Download fresh data
-  const result = await fetchAndSyncData();
+  // Step 2: Download fresh data with progress callback
+  const result = await fetchAndSyncData(onProgress);
 
   authStore.setDataSyncing(false);
 

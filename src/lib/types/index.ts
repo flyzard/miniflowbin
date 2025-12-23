@@ -127,6 +127,7 @@ export interface ReleaseFlowState {
   sourceBatch: InventoryBatch | null;
   sourcePosition: StoragePosition | null;
   destinationPosition: StoragePosition | null;
+  quantity: number | null;
 }
 
 // ============================================================================
