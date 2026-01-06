@@ -121,6 +121,7 @@ export interface ReceiveFlowState {
   quantity: number;
   position: StoragePosition | null;
   batchNumber: string | null;
+  receivedAt: string | null;
 }
 
 export interface ReleaseFlowState {

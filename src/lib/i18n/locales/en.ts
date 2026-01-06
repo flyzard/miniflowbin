@@ -27,6 +27,7 @@ export default {
   'form.quantity': 'Quantity',
   'form.position': 'Storage Position',
   'form.position.label': 'Position',
+  'form.receiveDate': 'Receive Date',
   'form.batch': 'Batch #',
   'form.batch.generating': 'Generating...',
 

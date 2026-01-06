@@ -11,7 +11,8 @@ const initial: ReceiveFlowState = {
   product: null,
   quantity: 1,
   position: null,
-  batchNumber: null
+  batchNumber: null,
+  receivedAt: null
 };
 
 export const receiveFlow = writable<ReceiveFlowState>(initial);
@@ -21,5 +22,5 @@ export function resetReceiveFlow(): void {
 }
 
 export function canConfirmReceive(s: ReceiveFlowState): boolean {
-  return s.product !== null && s.position !== null && s.quantity > 0;
+  return s.product !== null && s.position !== null && s.quantity > 0 && s.receivedAt !== null;
 }

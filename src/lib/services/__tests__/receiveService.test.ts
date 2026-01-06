@@ -14,7 +14,7 @@ vi.mock('../../db/database', () => ({
 // Mock the repositories
 vi.mock('../../repositories/batchRepo', () => ({
   createBatch: vi.fn(),
-  getTodayBatchCount: vi.fn()
+  getBatchCountForDate: vi.fn()
 }));
 
 vi.mock('../../repositories/productRepo', () => ({
@@ -33,7 +33,7 @@ vi.mock('../../repositories/transactionRepo', () => ({
 import { validateReceive, generateBatchNumber } from '../receiveService';
 import { getProductById } from '../../repositories/productRepo';
 import { getPositionById } from '../../repositories/positionRepo';
-import { getTodayBatchCount } from '../../repositories/batchRepo';
+import { getBatchCountForDate } from '../../repositories/batchRepo';
 
 describe('receiveService', () => {
   beforeEach(() => {
@@ -173,7 +173,7 @@ describe('receiveService', () => {
 
   describe('generateBatchNumber', () => {
     it('should generate batch number with correct format', async () => {
-      vi.mocked(getTodayBatchCount).mockResolvedValue(0);
+      vi.mocked(getBatchCountForDate).mockResolvedValue(0);
 
       const batchNumber = await generateBatchNumber('dc-1');
 
@@ -181,7 +181,7 @@ describe('receiveService', () => {
     });
 
     it('should increment sequence based on today count', async () => {
-      vi.mocked(getTodayBatchCount).mockResolvedValue(5);
+      vi.mocked(getBatchCountForDate).mockResolvedValue(5);
 
       const batchNumber = await generateBatchNumber('dc-1');
 
@@ -189,7 +189,7 @@ describe('receiveService', () => {
     });
 
     it('should pad sequence with zeros', async () => {
-      vi.mocked(getTodayBatchCount).mockResolvedValue(99);
+      vi.mocked(getBatchCountForDate).mockResolvedValue(99);
 
       const batchNumber = await generateBatchNumber('dc-1');
 
@@ -197,7 +197,7 @@ describe('receiveService', () => {
     });
 
     it('should include current date', async () => {
-      vi.mocked(getTodayBatchCount).mockResolvedValue(0);
+      vi.mocked(getBatchCountForDate).mockResolvedValue(0);
 
       const now = new Date();
       const expectedDate = [
@@ -209,6 +209,15 @@ describe('receiveService', () => {
       const batchNumber = await generateBatchNumber('dc-1');
 
       expect(batchNumber).toBe(`BATCH-${expectedDate}-001`);
+    });
+
+    it('should use provided date for batch number', async () => {
+      vi.mocked(getBatchCountForDate).mockResolvedValue(0);
+
+      const customDate = new Date('2025-06-15');
+      const batchNumber = await generateBatchNumber('dc-1', customDate);
+
+      expect(batchNumber).toBe('BATCH-20250615-001');
     });
   });
 });

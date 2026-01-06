@@ -6,15 +6,17 @@
   import { currentUser } from '../../lib/auth';
   import { receiveFlow, resetReceiveFlow } from '../../lib/stores/receiveFlow';
   import { executeReceive, generateBatchNumber } from '../../lib/services/receiveService';
+  import { dateToISOTimestamp } from '../../lib/utils/date';
   import { t } from '../../lib/i18n';
   import { onMount } from 'svelte';
 
   let isSubmitting = false;
 
-  // Generate batch number on mount
+  // Generate batch number on mount using the selected receive date
   onMount(async () => {
-    if ($selectedDc && !$receiveFlow.batchNumber) {
-      const newBatchNumber = await generateBatchNumber($selectedDc.id);
+    if ($selectedDc) {
+      const receiveDate = $receiveFlow.receivedAt ? new Date($receiveFlow.receivedAt) : undefined;
+      const newBatchNumber = await generateBatchNumber($selectedDc.id, receiveDate);
       receiveFlow.update(s => ({ ...s, batchNumber: newBatchNumber }));
     }
   });
@@ -37,6 +39,11 @@
       icon: 'location' as const
     },
     {
+      label: $t('form.receiveDate'),
+      value: $receiveFlow.receivedAt ?? '-',
+      icon: 'date' as const
+    },
+    {
       label: $t('form.batch'),
       value: $receiveFlow.batchNumber ?? $t('form.batch.generating'),
       icon: 'batch' as const,
@@ -45,8 +52,8 @@
   ];
 
   async function handleConfirm() {
-    const { product, position, quantity } = $receiveFlow;
-    if (!product || !position || !$selectedDc || !$currentUser) {
+    const { product, position, quantity, receivedAt } = $receiveFlow;
+    if (!product || !position || !$selectedDc || !$currentUser || !receivedAt) {
       showError($t('error.missing_data'));
       return;
     }
@@ -59,7 +66,8 @@
         positionId: position.id,
         quantity,
         userId: $currentUser.id,
-        distributionCenterId: $selectedDc.id
+        distributionCenterId: $selectedDc.id,
+        receivedAt: dateToISOTimestamp(receivedAt)
       });
 
       if (result.success) {

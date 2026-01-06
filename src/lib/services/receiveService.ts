@@ -5,7 +5,7 @@
  */
 
 import { transaction } from '../db/database';
-import { createBatch, getTodayBatchCount } from '../repositories/batchRepo';
+import { createBatch, getBatchCountForDate } from '../repositories/batchRepo';
 import { createTransaction } from '../repositories/transactionRepo';
 import { getProductById } from '../repositories/productRepo';
 import { getPositionById } from '../repositories/positionRepo';
@@ -20,11 +20,13 @@ import { recordTransactionWithUpload } from './transactionHelper';
  *
  * Format: BATCH-YYYYMMDD-NNN
  * Example: BATCH-20251215-001
+ * @param distributionCenterId - Distribution center ID
+ * @param date - Optional date to use for batch number, defaults to today
  */
-export async function generateBatchNumber(distributionCenterId: string): Promise<string> {
-  const dateStr = formatDateCompact();
-  const todayCount = await getTodayBatchCount(distributionCenterId);
-  const sequence = padNumber(todayCount + 1, 3);
+export async function generateBatchNumber(distributionCenterId: string, date?: Date): Promise<string> {
+  const dateStr = formatDateCompact(date);
+  const batchCount = await getBatchCountForDate(distributionCenterId, dateStr);
+  const sequence = padNumber(batchCount + 1, 3);
   return `BATCH-${dateStr}-${sequence}`;
 }
 
@@ -37,6 +39,7 @@ export interface ReceiveInput {
   expirationDate?: string;
   lotNumber?: string;
   notes?: string;
+  receivedAt?: string;
 }
 
 export interface ReceiveResult {
@@ -109,8 +112,11 @@ export async function executeReceive(input: ReceiveInput): Promise<ReceiveResult
   }
 
   try {
-    // Generate batch number
-    const batchNumber = await generateBatchNumber(input.distributionCenterId);
+    // Parse receivedAt date for batch number generation (if provided)
+    const receiveDate = input.receivedAt ? new Date(input.receivedAt) : undefined;
+
+    // Generate batch number using the receive date
+    const batchNumber = await generateBatchNumber(input.distributionCenterId, receiveDate);
 
     // Execute in a transaction
     const result = await transaction(async () => {
@@ -123,7 +129,8 @@ export async function executeReceive(input: ReceiveInput): Promise<ReceiveResult
         receivedBy: input.userId,
         distributionCenterId: input.distributionCenterId,
         expirationDate: input.expirationDate,
-        lotNumber: input.lotNumber
+        lotNumber: input.lotNumber,
+        receivedAt: input.receivedAt
       });
 
       // Create the receive transaction
@@ -135,7 +142,8 @@ export async function executeReceive(input: ReceiveInput): Promise<ReceiveResult
         quantity: input.quantity,
         userId: input.userId,
         distributionCenterId: input.distributionCenterId,
-        notes: input.notes
+        notes: input.notes,
+        timestamp: input.receivedAt
       });
 
       return { batch, txn };

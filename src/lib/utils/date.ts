@@ -28,3 +28,11 @@ export function formatDateCompact(date: Date = new Date()): string {
 export function padNumber(num: number, length: number): string {
   return String(num).padStart(length, '0');
 }
+
+/**
+ * Convert a date string (YYYY-MM-DD) to ISO timestamp
+ * Uses noon local time to avoid timezone boundary issues
+ */
+export function dateToISOTimestamp(dateStr: string): string {
+  return new Date(`${dateStr}T12:00:00`).toISOString();
+}

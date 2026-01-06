@@ -27,6 +27,7 @@ export default {
   'form.quantity': 'Quantidade',
   'form.position': 'Posição de Armazenamento',
   'form.position.label': 'Posição',
+  'form.receiveDate': 'Data de Recebimento',
   'form.batch': 'Lote #',
   'form.batch.generating': 'Gerando...',
 

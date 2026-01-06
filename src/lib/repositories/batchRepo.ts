@@ -51,9 +51,11 @@ export async function createBatch(data: {
   distributionCenterId: string;
   expirationDate?: string;
   lotNumber?: string;
+  receivedAt?: string;
 }): Promise<InventoryBatch> {
   const id = generateId();
   const timestamp = now();
+  const receivedAt = data.receivedAt ?? timestamp;
 
   await exec(
     `INSERT INTO inventory_batches
@@ -66,7 +68,7 @@ export async function createBatch(data: {
       data.positionId,
       data.quantity,
       data.quantity,
-      timestamp,
+      receivedAt,
       data.receivedBy,
       data.expirationDate ?? null,
       data.lotNumber ?? null,
@@ -90,12 +92,14 @@ export async function updateBatchQuantity(id: string, newQuantity: number): Prom
 }
 
 /**
- * Get the max sequence number for today's batches (for batch number generation)
+ * Get the max sequence number for batches on a given date (for batch number generation)
  * Queries by batch_number prefix to include synced batches
+ * @param distributionCenterId - Distribution center ID
+ * @param dateCompact - Optional date in YYYYMMDD format, defaults to today
  */
-export async function getTodayBatchCount(distributionCenterId: string): Promise<number> {
-  const today = getTodayDate().replace(/-/g, ''); // Convert YYYY-MM-DD to YYYYMMDD
-  const prefix = `BATCH-${today}-%`;
+export async function getBatchCountForDate(distributionCenterId: string, dateCompact?: string): Promise<number> {
+  const date = dateCompact ?? getTodayDate().replace(/-/g, '');
+  const prefix = `BATCH-${date}-%`;
   const result = await queryOne<{ max_seq: number | null }>(
     `SELECT MAX(CAST(SUBSTR(batch_number, -3) AS INTEGER)) as max_seq
      FROM inventory_batches
@@ -104,6 +108,13 @@ export async function getTodayBatchCount(distributionCenterId: string): Promise<
     [distributionCenterId, prefix]
   );
   return result?.max_seq ?? 0;
+}
+
+/**
+ * @deprecated Use getBatchCountForDate instead
+ */
+export async function getTodayBatchCount(distributionCenterId: string): Promise<number> {
+  return getBatchCountForDate(distributionCenterId);
 }
 
 // ============================================================================

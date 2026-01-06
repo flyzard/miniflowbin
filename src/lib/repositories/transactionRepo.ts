@@ -29,9 +29,11 @@ export async function createTransaction(data: {
   userId: string;
   distributionCenterId: string;
   notes?: string;
+  timestamp?: string;
 }): Promise<Transaction> {
   const id = generateId();
-  const timestamp = now();
+  const createdAt = now();
+  const timestamp = data.timestamp ?? createdAt;
 
   await exec(
     `INSERT INTO transactions
@@ -49,7 +51,7 @@ export async function createTransaction(data: {
       data.userId,
       data.distributionCenterId,
       data.notes ?? null,
-      timestamp
+      createdAt
     ]
   );
 
